@@ -1,0 +1,833 @@
+<!-- Sets up templates for the actual "slides" and forms that are 
+supposed to be shown at each stage of the experiment. -->
+
+<html>
+<head>
+  <title>Start page</title>
+<script src="https://www.stanford.edu/~dco/common/jquery.min.js"></script>
+<script src="https://www.stanford.edu/~dco/common/mmturkey.0.5.js?nowarn"></script>
+<link rel="stylesheet" href="https://www.stanford.edu/~dco/common/style.css" />
+</head>
+<body>
+<div class="progress" id="progressBar">
+	<div class="bar-wrapper">
+	  <div class="bar"></div>
+	</div>
+	<p>Progress bar: <span id="trial-num">{{}}</span><span>/</span><span id="total-num">{{}}</span></p>
+</div>
+<div class="slide" id="instructions">
+  <img src="https://www.stanford.edu/~dco/common/images/stanford.png" alt="Stanford University">
+    <p id='logo-text'>Stanford Computation and Cognition Lab</p>
+  <p class="block-text">
+  In this experiment, we are interested in how
+  people make judgments about others' reactions.
+  </p>
+  <button type="button" onclick="this.blur(); experiment.description()">Start</button>
+    <p class="block-text" id="legal">Legal information: By answering the
+    following questions, you are participating in a study being performed by
+    cognitive scientists in the Stanford Department of Psychology. If you have
+    questions about this research, please contact <b>Desmond Ong</b> at <a
+    href="mailto://desmond.ong@stanford.edu">desmond.ong@stanford.edu</a> or Noah
+    Goodman, at ngoodman@stanford.edu. You must be  at least 18 years old to
+    participate. Your participation in this research is voluntary. You may
+    decline to answer any or all of the following questions. You may decline
+    further participation, at any time, without adverse consequences. Your
+    anonymity is assured; the researchers who have requested your
+    participation will not receive any personal information about you.</p>
+</div>
+
+
+
+<script LANGUAGE="JavaScript">
+<!--
+function ValidateForm(form){
+    var valid = 0;
+    for(var i = 0; i < form.elements.length; i++) {
+        if (form.elements[i].checked == true ) { 
+            valid = 1; 
+            return true;
+        } 
+    } 
+    if (valid == 0) {
+        alert ( "Please answer this question." );
+        return false; 
+    }
+}
+
+function ValidateSelect(form) {
+    if (form.ageRange.selectedIndex != 0 && form.ageRange.selectedIndex != 1 && form.ageRange.selectedIndex != 2 && form.ageRange.selectedIndex != 3 && form.ageRange.selectedIndex != 4 && form.ageRange.selectedIndex != 5 && form.ageRange.selectedIndex != 6) {
+        alert ( "Please answer this question." );
+        return false;
+    }
+    return true; 
+}
+
+function ValidateNumber(field)
+{
+    valid = true;
+    if (field.value == "")
+    {
+        alert ("Please answer all the questions.");
+        valid = false;
+    }
+    if (field.value < 0 || field.value > 10) {
+    	alert ("Please answer between 0 and 10.");
+    	valid = false;
+    }
+    if (isNaN(field.value)) {
+        alert ("Please answer using only numbers.");
+        valid = false;
+    }
+    return valid;
+
+}
+
+function checkPreview() {
+    if (turk.previewMode) {
+        alert ("Please accept this HIT to see more questions.");
+        return false;
+    }
+    return true;
+}
+
+function ValidateText(field)
+{
+    valid = true;
+
+    if (field.value == "" )
+    {
+        alert ("Please answer all the questions.");
+        valid = false;
+    }
+
+    return valid;
+}
+
+/*
+function pressEnter(e) {
+    if (e.keyCode == 13) {
+    	document.rating.next.click();
+    	return false;
+    }
+}
+*/
+
+function validateBFI() {  
+    if ($('input[name="BFIq"]:checked').val()!=null
+        ) {
+        return true;
+    } else {
+        alert ( "Please answer the question." );
+        return false;    
+    }
+}
+
+function validateBFIcheck() {  
+    if ($('input[name="BFIqCheck"]:checked').val()!=null
+        ) {
+        return true;
+    } else {
+        alert ( "Please answer the question." );
+        return false;    
+    }
+}
+
+// function validateBFI() {  
+//     if ($('input[name="BFIq1"]:checked').val()!=null &&
+//         $('input[name="BFIq2"]:checked').val()!=null &&
+//         $('input[name="BFIq3"]:checked').val()!=null &&
+//         $('input[name="BFIq4"]:checked').val()!=null &&
+//         $('input[name="BFIq5"]:checked').val()!=null &&
+//         $('input[name="BFIq6"]:checked').val()!=null &&
+//         $('input[name="BFIq7"]:checked').val()!=null &&
+//         $('input[name="BFIq8"]:checked').val()!=null &&
+//         $('input[name="BFIq9"]:checked').val()!=null &&
+//         $('input[name="BFIq10"]:checked').val()!=null 
+//         ) {
+//         return true;
+//     } else {
+//         alert ( "Please answer all the questions." );
+//         return false;    
+//     }
+// }
+
+function ValidateRadioButtons() { 
+    if ($('input[name="q1"]:checked').val()!=null &&
+        $('input[name="q2"]:checked').val()!=null &&
+        $('input[name="q3"]:checked').val()!=null &&
+        $('input[name="q4"]:checked').val()!=null &&
+        $('input[name="q5"]:checked').val()!=null &&
+        $('input[name="q6"]:checked').val()!=null &&
+        $('input[name="q7"]:checked').val()!=null &&
+        $('input[name="q8"]:checked').val()!=null
+        ) {
+        return true;
+    } else {
+        alert ( "Please answer all the questions." );
+        return false;    
+    }
+}
+
+function ValidateDemographicForm() {
+    if ($('input[name="genderButton"]:checked').val()!=null &&
+        $('#ageRange').val()!=null &&
+        $('input[name="nativeLanguage"]').val()!=null) {
+        return true;
+    } else {
+        alert ( "Please answer all the questions." );
+        return false;    
+    }
+}
+
+function ValidateManipChecks() {
+    if ($('input[name="similarityQ"]:checked').val()!=null &&
+        $('input[name="likingQ"]:checked').val()!=null &&
+        $('input[name="empathyQ"]:checked').val()!=null
+        ) {
+        return true;
+    } else {
+        alert ( "Please answer all the questions." );
+        return false;    
+    }
+}
+
+
+
+</script>
+
+
+<div class="slide" id="description">
+<p id='logo-text'>Instructions</p>
+
+<p class="block-text"> First, we will be asking you to fill out a simple questionnaire. This will help us to pair participants for the next part of this session. </p>
+
+<div id="form">
+<button type="button" onclick="this.blur(); experiment.showMatch()">Let's Start!</button>
+</div>
+</div>
+
+
+<div class="slide" id="match">
+    <center>
+        <p class="block-text">
+        In a previous version of this study, <span id="CharName3"></span> played on a hypothetical game show. Today, you will be watching a "replay" of him playing on that game show. 
+        <br><br>
+        But first, we want to find out a little more about you, and we want you to find out a little more about <span id="CharName4"></span>.
+        </p>
+    </center>
+    <div id="form">
+            <button type="button" onclick="this.blur(); experiment.startingQuestionnaire()">Next</button>
+    </div>
+    </center>
+</div>
+
+
+<div class="slide" id="startingQuestionnaire">
+<p id="question"> Please answer the following 10 personality questions. </p>
+
+    <!-- <div id="questionnaires" style="width:500px; margin: 0 auto"> -->
+    <div id="questionnaires" style="width: 80%; margin: 0 auto">
+    
+    <!-- Big Five Inventory-10 (BFI-10) from Rammstedt and John (2007) -->
+        <div id="questionnaire1">
+            <center>
+                <p id="block-text">
+                <span id="questionText">
+                Q1: I see myself as someone who is reserved
+                </span>
+                <br>
+                True &nbsp;&nbsp;&nbsp;
+                <input type="radio" name="BFIq" value="T" /> &nbsp;&nbsp;    
+                <input type="radio" name="BFIq" value="F" /> &nbsp;&nbsp; False
+                </p>
+            
+        <button type="button" onclick="this.blur(); if(validateBFI()) {experiment.startingQuestionnaireFeedback();}">Next</button>        
+        </center>
+        </div>
+        <div id="questionnaireFeedback">
+            <center>
+                <p id="block-text">
+                <span id="CharName5"></span> <span id="feedbackText"></span>
+                
+                <br><br>
+                <b>
+                What did he answer to the following question?
+                </b>
+                <br><br>
+                <i><span id="questionText2">
+                Q1: I see myself as someone who is reserved
+                </span></i>
+                <br>
+                True &nbsp;&nbsp;&nbsp;
+                <input type="radio" name="BFIqCheck" value="T" /> &nbsp;&nbsp;    
+                <input type="radio" name="BFIqCheck" value="F" /> &nbsp;&nbsp; False
+                </p>
+            
+        <button type="button" onclick="this.blur(); if(validateBFIcheck()) {experiment.startingQuestionnaire();}">Ok</button>        
+        </center>
+        </div>
+    </div>
+
+    <!-- <p class="block-text"> How well do the following statements describe your personality? Please indicate how well you agree with the following statements. "Strongly Disagree" on the <b>left</b> to "Strongly Agree" on the <b>right</b>.</p>
+
+
+        <center>
+        <table width=70%>
+            <tr><td>
+                I see myself as someone who ...
+            </td><td width=400>
+            Strongly  &nbsp;  &nbsp;  &nbsp;&nbsp;  &nbsp;  &nbsp; Neutral &nbsp;  &nbsp;  &nbsp;  &nbsp;&nbsp;  &nbsp; Strongly  <br>
+            Disagree &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;  &nbsp;  &nbsp;  &nbsp;  &nbsp;  &nbsp; &nbsp;  &nbsp; &nbsp; Agree 
+            </td></tr>
+            <tr><td>
+
+                ... is reserved
+
+            </td><td> &nbsp; &nbsp; &nbsp; 
+                                <input type="radio" name="BFIq1" value="1" /> &nbsp;&nbsp;    
+                                <input type="radio" name="BFIq1" value="2" /> &nbsp;&nbsp;   
+                                <input type="radio" name="BFIq1" value="3" /> &nbsp;&nbsp;   
+                                <input type="radio" name="BFIq1" value="4" /> &nbsp;&nbsp;   
+                                <input type="radio" name="BFIq1" value="5" /> &nbsp;&nbsp;
+                                <input type="radio" name="BFIq1" value="6" /> &nbsp;&nbsp;   
+                                <input type="radio" name="BFIq1" value="7" /> &nbsp;&nbsp;
+
+            </td></tr>
+            <tr><td> 
+
+                ... is generally trusting
+            
+            </td><td>&nbsp; &nbsp; &nbsp; 
+                                <input type="radio" name="BFIq2" value="1" /> &nbsp;&nbsp;     
+                                <input type="radio" name="BFIq2" value="2" /> &nbsp;&nbsp;    
+                                <input type="radio" name="BFIq2" value="3" /> &nbsp;&nbsp;    
+                                <input type="radio" name="BFIq2" value="4" /> &nbsp;&nbsp;    
+                                <input type="radio" name="BFIq2" value="5" /> &nbsp;&nbsp;
+                                <input type="radio" name="BFIq2" value="6" /> &nbsp;&nbsp;    
+                                <input type="radio" name="BFIq2" value="7" /> &nbsp;&nbsp;
+            </td></tr>
+            <tr><td>
+
+                ... tends to be lazy
+
+            </td><td>&nbsp; &nbsp; &nbsp;  
+                                <input type="radio" name="BFIq3" value="1" /> &nbsp;&nbsp;  
+                                <input type="radio" name="BFIq3" value="2" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq3" value="3" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq3" value="4" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq3" value="5" /> &nbsp;&nbsp;
+                                <input type="radio" name="BFIq3" value="6" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq3" value="7" /> &nbsp;&nbsp;
+            </td></tr>
+            
+            <tr height=20></tr>
+
+            <tr><td> 
+
+                ... is relaxed, handles stress well
+            
+            </td><td>&nbsp; &nbsp; &nbsp;
+                                <input type="radio" name="BFIq4" value="1" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq4" value="2" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq4" value="3" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq4" value="4" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq4" value="5" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq4" value="6" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq4" value="7" /> &nbsp;&nbsp; 
+            </td></tr>
+            
+            
+            
+            <tr><td>
+
+                ... has few artistic interests
+
+            </td><td>&nbsp; &nbsp; &nbsp; 
+                                <input type="radio" name="BFIq5" value="1" /> &nbsp;&nbsp;  
+                                <input type="radio" name="BFIq5" value="2" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq5" value="3" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq5" value="4" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq5" value="5" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq5" value="6" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq5" value="7" /> &nbsp;&nbsp; 
+            </td></tr>
+            <tr height=20></tr>
+            <tr><td> 
+
+                ... is outgoing, sociable 
+            
+            </td><td>&nbsp; &nbsp; &nbsp;
+                                <input type="radio" name="BFIq6" value="1" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq6" value="2" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq6" value="3" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq6" value="4" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq6" value="5" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq6" value="6" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq6" value="7" /> &nbsp;&nbsp; 
+            </td></tr>
+            
+            <tr><td> 
+
+                ... who tends to find fault with others
+            
+            </td><td>&nbsp; &nbsp; &nbsp;
+                                <input type="radio" name="BFIq7" value="1" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq7" value="2" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq7" value="3" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq7" value="4" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq7" value="5" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq7" value="6" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq7" value="7" /> &nbsp;&nbsp; 
+            </td></tr>
+            
+            <tr height=20></tr>
+
+            <tr><td> 
+
+                ... does a thorough job
+            
+            </td><td>&nbsp; &nbsp; &nbsp; 
+                                <input type="radio" name="BFIq8" value="1" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq8" value="2" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq8" value="3" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq8" value="4" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq8" value="5" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq8" value="6" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq8" value="7" /> &nbsp;&nbsp; 
+            </td></tr>
+
+            
+
+            <tr><td>
+
+                ... gets nervous easily
+
+            </td><td>&nbsp; &nbsp; &nbsp; 
+                                <input type="radio" name="BFIq9" value="1" /> &nbsp;&nbsp;  
+                                <input type="radio" name="BFIq9" value="2" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq9" value="3" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq9" value="4" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq9" value="5" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq9" value="6" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq9" value="7" /> &nbsp;&nbsp; 
+            </td></tr>
+             <tr><td>
+
+                ... has an active imagination
+
+            </td><td>&nbsp; &nbsp; &nbsp; 
+                                <input type="radio" name="BFIq10" value="1" /> &nbsp;&nbsp;  
+                                <input type="radio" name="BFIq10" value="2" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq10" value="3" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq10" value="4" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq10" value="5" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq10" value="6" /> &nbsp;&nbsp; 
+                                <input type="radio" name="BFIq10" value="7" /> &nbsp;&nbsp; 
+            </td></tr>
+
+    </table>
+
+    <br><br> -->
+
+    <!-- <form name="birthMonth">
+    </br>
+    <span id="infoQ"> Which month were you born in? </span>
+    <br>
+    <input type="radio" name="birthMonthButton" value="1" /><span id="opt">January</span><br>
+    <input type="radio" name="birthMonthButton" value="2" /><span id="opt">February</span><br>
+    <input type="radio" name="birthMonthButton" value="3" /><span id="opt">March</span><br>
+    <input type="radio" name="birthMonthButton" value="4" /><span id="opt">April</span><br>
+    <input type="radio" name="birthMonthButton" value="5" /><span id="opt">May</span><br>
+    <input type="radio" name="birthMonthButton" value="6" /><span id="opt">June</span><br>
+    <input type="radio" name="birthMonthButton" value="7" /><span id="opt">July</span><br>
+    <input type="radio" name="birthMonthButton" value="8" /><span id="opt">August</span><br>
+    <input type="radio" name="birthMonthButton" value="9" /><span id="opt">September</span><br>
+    <input type="radio" name="birthMonthButton" value="10" /><span id="opt">October</span><br>
+    <input type="radio" name="birthMonthButton" value="11" /><span id="opt">November</span><br>
+    <input type="radio" name="birthMonthButton" value="12" /><span id="opt">December</span><br>
+    </form>
+
+    <form name="ssn">
+    </br>
+    <span id="infoQ"> Is the <b>last digit</b> of your SSN odd or even? </span>
+    <br>
+    <input type="radio" name="ssnButton" value="1" /><span id="opt">Odd</span><br>
+    <input type="radio" name="ssnButton" value="2" /><span id="opt">Even</span><br>
+    </form>
+    
+
+    <form name="firstLetterName">
+    </br>
+    <span id="infoQ"> What is the <b>first letter</b> of your first name? </span>
+    <br>
+    <input type="text" name="firstLetterName" /><br />
+    </form>
+
+
+    <form name="gender">
+    </br>
+    <span id="infoQ">Gender:</span>&nbsp;&nbsp;
+    <input type="radio" name="genderButton" value="M" /><span id="opt">Male</span>&nbsp;&nbsp;
+    <input type="radio" name="genderButton" value="F" /><span id="opt">Female</span>
+    </form>
+
+    <form name="age">
+    <span id="infoQ">What is your age?</span><br>
+    <input type="radio" name="ageButton" value="1" /><span id="opt">Under 18</span><br>
+    <input type="radio" name="ageButton" value="2" /><span id="opt">18-25</span><br>
+    <input type="radio" name="ageButton" value="3" /><span id="opt">26-35</span><br>
+    <input type="radio" name="ageButton" value="4" /><span id="opt">36-45</span><br>
+    <input type="radio" name="ageButton" value="5" /><span id="opt">46-55</span><br>
+    <input type="radio" name="ageButton" value="6" /><span id="opt">56-65</span><br>
+    <input type="radio" name="ageButton" value="7" /><span id="opt">Above 66</span><br>
+    </form>
+
+    <form name="age">
+    <span id="infoQ">What is your height?</span><br>
+    <input type="radio" name="heightButton" value="1" /><span id="opt">Under 5'</span><br>
+    <input type="radio" name="heightButton" value="2" /><span id="opt">5' to 5'3</span><br>
+    <input type="radio" name="heightButton" value="3" /><span id="opt">5'4 to 5'7</span><br>
+    <input type="radio" name="heightButton" value="4" /><span id="opt">5'8 to 5'11</span><br>
+    <input type="radio" name="heightButton" value="5" /><span id="opt">6' to 6'3</span><br>
+    <input type="radio" name="heightButton" value="6" /><span id="opt">6'4 to 6'7</span><br>
+    <input type="radio" name="heightButton" value="7" /><span id="opt">Above 6'8</span><br>
+    </form> -->
+
+
+
+    <!-- <div id="form">
+    <button type="button" onclick="this.blur(); if(validateBFI()) {experiment.endQuestionnaire();}">Next</button>
+    </div> -->
+</div>
+
+
+<div class="slide" id="briefing">
+    <center>
+    <p class="block-text"> 
+        Thank you for answering the personality questionnaires.
+        <br><br>
+        Today, you will be watching a "replay" of <span id="CharName11"></span> playing on that game show. He will be betting on a spinning wheel. The hypothethical prizes that he will receive, as well as the chance that he win, will vary from game to game.
+        <br><br>
+        You will watch a total of <span id="tot-num">{{}}</span> games. Please imagine each game as being <b>independent and separate from every other game</b>.
+        <br><br>
+        We will be asking you to rate how you think he feels after finding out the result of each game. 
+        </p>
+        
+         <button id="matchResult1Button" type="button" onclick="this.blur(); experiment.next();">Ok</button>
+        </center>
+</div>
+
+<div class="slide" id="stage">
+       <p id="question"><span id="CharName1"> </span> is going to spin this wheel. 
+        <br>He will win the amount of money shown in the section the wheel lands on (indicated by the black pointer). Please study the wheel closely: make sure you know how much he would win for each section, and how large each section is.
+        <br><br>
+        (Please imagine each game as being <b>independent and separate from every other game</b>.)
+        <br>
+     <!-- <p id="question">You are going to spin this wheel. Imagine that you will win the amount of money shown in the section the wheel lands on (indicated by the black pointer). Please study the wheel closely: make sure you know how much you would win for each section, and how large each section is.
+      -->   <br>
+
+        <b>Click on the ``Go" button when you are ready.</b></p>
+    
+    
+    <div id="wheel" width="100%" height="300"> </div>
+
+    <!--<canvas id="spinnerCanvas" width="200" height="200"> </canvas>-->
+
+    <div id="response">
+        <center>
+            <h3><span id="CharName2"> </span> has won <b>$<span id="Outcome"> </span></b>!<br> How do you think he feels? Please guess how strongly he feels for each of the following emotions:</h3>
+            <!-- <h3>You have won <b>$<span id="Outcome"> </span></b>!<br> How do you feel? Please rate how strongly you feel for each of the following emotions:</h3> -->
+        </center>
+        <div id="form">
+        
+        
+        
+        <!--
+        <form name="rating">
+        <span id="scale"><b>0</b> = Extremely Sad </span>&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" name="score" size="10" runat=server onkeypress="return pressEnter(event)"/>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span id="scale"><b>10</b> = Extremely Happy </span>
+        -->
+
+        <form name="q1form">
+        &nbsp; Happiness: &nbsp; &nbsp; 
+            <span id="happinessResponse">
+                Not at all
+                    <input type="radio" name="q1" value="1" />  
+                    <input type="radio" name="q1" value="2" />  
+                    <input type="radio" name="q1" value="3" />  
+                    <input type="radio" name="q1" value="4" />  
+                    <input type="radio" name="q1" value="5" />  
+                    <input type="radio" name="q1" value="6" />  
+                    <input type="radio" name="q1" value="7" />  
+                    <input type="radio" name="q1" value="8" />  
+                    <input type="radio" name="q1" value="9" />  
+                Extremely
+            </span>
+        </form>
+               
+        <form name="q2form">
+        &nbsp; &nbsp; &nbsp; Sadness: &nbsp; &nbsp; &nbsp;
+            <span id="sadnessResponse">
+                Not at all
+                    <input type="radio" name="q2" value="1" />  
+                    <input type="radio" name="q2" value="2" />  
+                    <input type="radio" name="q2" value="3" />  
+                    <input type="radio" name="q2" value="4" />  
+                    <input type="radio" name="q2" value="5" />  
+                    <input type="radio" name="q2" value="6" />  
+                    <input type="radio" name="q2" value="7" />  
+                    <input type="radio" name="q2" value="8" />  
+                    <input type="radio" name="q2" value="9" />  
+                Extremely
+            </span>
+        </form>
+        
+        <form name="q3form">
+        &nbsp; &nbsp; &nbsp; Anger: &nbsp; &nbsp; &nbsp; &nbsp;
+            <span id="angerResponse">
+                Not at all
+                    <input type="radio" name="q3" value="1" />  
+                    <input type="radio" name="q3" value="2" />  
+                    <input type="radio" name="q3" value="3" />  
+                    <input type="radio" name="q3" value="4" />  
+                    <input type="radio" name="q3" value="5" />  
+                    <input type="radio" name="q3" value="6" />  
+                    <input type="radio" name="q3" value="7" />
+                    <input type="radio" name="q3" value="8" />  
+                    <input type="radio" name="q3" value="9" />    
+                Extremely
+            </span>
+        </form>
+        
+        <form name="q4form">
+        &nbsp; &nbsp; Surprise: &nbsp; &nbsp; &nbsp; 
+            <span id="surpriseResponse">
+                Not at all
+                    <input type="radio" name="q4" value="1" />  
+                    <input type="radio" name="q4" value="2" />  
+                    <input type="radio" name="q4" value="3" />  
+                    <input type="radio" name="q4" value="4" />  
+                    <input type="radio" name="q4" value="5" />  
+                    <input type="radio" name="q4" value="6" />  
+                    <input type="radio" name="q4" value="7" />
+                    <input type="radio" name="q4" value="8" />  
+                    <input type="radio" name="q4" value="9" />    
+                Extremely
+            </span>
+        </form>
+        <br>
+        <form name="q5form">
+        &nbsp; &nbsp; Disgust: &nbsp; &nbsp; &nbsp; &nbsp; 
+            <span id="disgustResponse">
+                Not at all
+                    <input type="radio" name="q5" value="1" />  
+                    <input type="radio" name="q5" value="2" />  
+                    <input type="radio" name="q5" value="3" />  
+                    <input type="radio" name="q5" value="4" />  
+                    <input type="radio" name="q5" value="5" />  
+                    <input type="radio" name="q5" value="6" />  
+                    <input type="radio" name="q5" value="7" />
+                    <input type="radio" name="q5" value="8" />  
+                    <input type="radio" name="q5" value="9" />    
+                Extremely
+            </span>
+        </form>
+
+        <form name="q6form">
+        &nbsp; &nbsp; &nbsp; &nbsp; Fear: &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+            <span id="fearResponse">
+                Not at all
+                    <input type="radio" name="q6" value="1" />  
+                    <input type="radio" name="q6" value="2" />  
+                    <input type="radio" name="q6" value="3" />  
+                    <input type="radio" name="q6" value="4" />  
+                    <input type="radio" name="q6" value="5" />  
+                    <input type="radio" name="q6" value="6" />  
+                    <input type="radio" name="q6" value="7" />
+                    <input type="radio" name="q6" value="8" />  
+                    <input type="radio" name="q6" value="9" />    
+                Extremely
+            </span>
+        </form>
+        
+        <form name="q7form">
+        Contentment: &nbsp;
+            <span id="contentmentResponse">
+                Not at all
+                    <input type="radio" name="q7" value="1" />  
+                    <input type="radio" name="q7" value="2" />  
+                    <input type="radio" name="q7" value="3" />  
+                    <input type="radio" name="q7" value="4" />  
+                    <input type="radio" name="q7" value="5" />  
+                    <input type="radio" name="q7" value="6" />  
+                    <input type="radio" name="q7" value="7" />
+                    <input type="radio" name="q7" value="8" />  
+                    <input type="radio" name="q7" value="9" />    
+                Extremely
+            </span>
+        </form>
+        
+        <form name="q8form">
+        Disappointment:
+            <span id="disappointmentResponse">
+                Not at all
+                    <input type="radio" name="q8" value="1" />  
+                    <input type="radio" name="q8" value="2" />  
+                    <input type="radio" name="q8" value="3" />  
+                    <input type="radio" name="q8" value="4" />  
+                    <input type="radio" name="q8" value="5" />  
+                    <input type="radio" name="q8" value="6" />  
+                    <input type="radio" name="q8" value="7" /> 
+                    <input type="radio" name="q8" value="8" />  
+                    <input type="radio" name="q8" value="9" />   
+                Extremely &nbsp; &nbsp;
+            </span>
+        </form>
+        
+        <!--
+        <button type="button" id="next" onclick="this.blur(); if (ValidateNumber(document.rating.score)) {experiment.next();}">Next</button>
+        
+        </form>
+        -->
+
+        <br>
+        <button type="button" id="next" onclick="this.blur(); if (ValidateRadioButtons()) {experiment.next();}">Next</button>
+    
+        
+        </div>
+    </div>
+</div>
+
+
+<div class="slide" id="manipCheck">
+    <center>
+        <h3>
+        You and <span id="CharName10"></span> have an approximately <b><span id="socialDist"></span>%</b> similarity in personality!
+        </h3>
+
+        <p id="question"> 
+            How close do you feel with <span id="CharName6"></span>? Please use the following slider to adjust the circles until they best describe how close you feel:
+        </p>
+    </center>
+    <div id="iOSDiv" style="height:350px; width:500; margin-left: auto;
+    margin-right: auto;"> </div>
+
+    <center>
+    <p id="question">
+            How similar do you feel with <span id="CharName7"></span>?
+        </p>
+        <form name="similarityForm">
+            <span id="similarityResponse">
+                Not at all
+                    <input type="radio" name="similarityQ" value="1" />  
+                    <input type="radio" name="similarityQ" value="2" />  
+                    <input type="radio" name="similarityQ" value="3" />  
+                    <input type="radio" name="similarityQ" value="4" />  
+                    <input type="radio" name="similarityQ" value="5" />  
+                    <input type="radio" name="similarityQ" value="6" />  
+                    <input type="radio" name="similarityQ" value="7" /> 
+                    <input type="radio" name="similarityQ" value="8" />  
+                    <input type="radio" name="similarityQ" value="9" />   
+                Extremely
+            </span>
+        </form>
+
+    <p id="question">
+            How much do you like <span id="CharName8"></span>?
+        </p>
+        <form name="likingForm">
+            <span id="likingResponse">
+                Not at all
+                    <input type="radio" name="likingQ" value="1" />  
+                    <input type="radio" name="likingQ" value="2" />  
+                    <input type="radio" name="likingQ" value="3" />  
+                    <input type="radio" name="likingQ" value="4" />  
+                    <input type="radio" name="likingQ" value="5" />  
+                    <input type="radio" name="likingQ" value="6" />  
+                    <input type="radio" name="likingQ" value="7" /> 
+                    <input type="radio" name="likingQ" value="8" />  
+                    <input type="radio" name="likingQ" value="9" />   
+                Extremely
+            </span>
+        </form>
+
+    <p id="question">
+            How much do you empathize with <span id="CharName9"></span>?
+        </p>
+        <form name="empathyForm">
+            <span id="empathyResponse">
+                Not at all
+                    <input type="radio" name="empathyQ" value="1" />  
+                    <input type="radio" name="empathyQ" value="2" />  
+                    <input type="radio" name="empathyQ" value="3" />  
+                    <input type="radio" name="empathyQ" value="4" />  
+                    <input type="radio" name="empathyQ" value="5" />  
+                    <input type="radio" name="empathyQ" value="6" />  
+                    <input type="radio" name="empathyQ" value="7" /> 
+                    <input type="radio" name="empathyQ" value="8" />  
+                    <input type="radio" name="empathyQ" value="9" />   
+                Extremely
+            </span>
+        </form>
+    </center>
+
+
+
+    <center>
+    <button type="button" id="next" onclick="this.blur(); if (ValidateManipChecks()) {experiment.afterManipCheck();}">Next</button>
+    </center>
+</div>
+
+<div class="slide" id="askInfo">
+    
+    <div id="form">
+        <p id="block-text"> Thank you for doing this HIT! </p>
+        <br>
+        <br>
+
+
+    <p id="infoQ">Please answer a few questions about yourself. </p>
+
+
+    <form name="gender">
+    <span id="infoQ">What is your gender?</span>&nbsp;&nbsp;
+    <input type="radio" name="genderButton" value="M" /><span id="opt">Male</span>&nbsp;&nbsp;
+    <input type="radio" name="genderButton" value="F" /><span id="opt">Female</span>
+    </form>
+    
+    <form name="age">
+    <span id="infoQ">What is your age?</span>&nbsp;&nbsp;
+    <input type="text" id="ageRange" /><br />
+
+
+    
+    <form name="language">
+    <span id="infoQ">What is your native language?</span>&nbsp;&nbsp;
+    <input type="text" name="nativeLanguage" /><br />
+    </form>
+    
+    
+    <form name="comments">
+    </br>
+    </br>
+    
+    <span id="infoQ"> (Optional) Please leave any comments or suggestions regarding this HIT:</span></br>
+    <TEXTAREA name="commentsTextArea" ROWS=10 COLS=50></TEXTAREA>
+    </br>
+    </form>
+    <button type="button" onclick="this.blur(); if (ValidateDemographicForm()) {experiment.end();}">Submit</button>
+    <!--
+    <button type="button" onclick="this.blur(); if (ValidateDemographicForm() && ValidateSelect(document.age) && ValidateText(document.language.nativeLanguage)) {experiment.end();}">Submit</button>
+    -->
+
+    </div>
+</div>
+
+<div class="slide" id="finished">
+  You're finished - thanks for participating! Submitting to Mechanical Turk...
+</div>
+
+<script src="https://www.stanford.edu/~dco/common/raphael.js" type="text/javascript"></script>
+<script src="experiment.js"></script>
+</body>
+</html>
