@@ -1,0 +1,997 @@
+---
+title: "Emotions and Psychological Distance Analysis"
+author: "Desmond Ong"
+date: "February 29, 2016"
+output: html_document
+---
+
+```{r preamble, echo=FALSE, message=FALSE}
+library(ggplot2)
+source("http://web.stanford.edu/~dco/common/useful.R")
+source("http://web.stanford.edu/~dco/common/processData.R")
+
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+blackGreyPalette <- c("#000000", "#999999")
+cbbwPal <- c("#d8b365","#5ab4ac")
+cbbwPal2 <- c("orange","steelblue3")
+
+my_theme <-   theme(legend.position="top",
+        strip.background = element_rect(fill="#FFFFFF"), 
+        strip.text = element_text(size=12), 
+        axis.text = element_text(size=12),
+        axis.title.x = element_text(size=14, vjust=-0.2),
+        axis.title.y = element_text(size=14, vjust=0.8),
+        legend.text = element_text(size=12),
+        title = element_text(size=18, vjust=1),
+        panel.grid = element_blank())
+```
+
+
+# Introduction
+
+```{r predictions-figure, fig.width = 7.5, fig.height = 4, echo=FALSE, message=FALSE, warning=FALSE}
+library(grid)
+predictionsFigDF = data.frame(panel = factor(c(rep("Simple Positive Bias",8), 
+                                               rep("Increased Sensitivity",8),
+                                               rep("Both",8)),
+                                             levels = c("Simple Positive Bias", "Increased Sensitivity",
+                                                        "Both"),
+                                             labels = c("a) Simple Positive Bias", 
+                                                        "b) Increased Sensitivity", "c) Both")),
+                              Target = factor(rep(rep(c("Self","Other"),each=4),3),
+                                             levels=c("Self", "Other"),
+                                             labels=c(" Self    ", " Other ")),
+                              PE = rep(c(1,2,3,4),6),
+                              attribution = c( c(4,5,6,7), # Self: Simple Bias
+                                               c(2,3,4,5), # Other: Simple Bias
+                                               c(4,5,6,7), # Self: Increased Sensitivity
+                                               c(2.5,4.5,6.5,8.5), # Other Increased Sensitivity
+                                               c(4,5,6,7), # Self: Both
+                                               c(1,3,5,7)) # Other: Both
+                             )
+
+ggplot(predictionsFigDF, aes(x=PE, y=attribution, colour=Target, group=Target, linetype=Target)) + 
+  ylab("Judgments of Target's Happiness") + xlab("Goodness Of Outcome") + geom_line() + 
+  scale_colour_manual(values=blackGreyPalette) +
+  facet_wrap( ~ panel, ncol=4, as.table=TRUE, drop=FALSE) +
+  scale_x_discrete(breaks=c("1", "2", "3", "4"),
+                      labels=c("Worse", "", "", "Better")) +
+  my_theme + theme(axis.ticks = element_blank(), 
+                   axis.text.y = element_blank(),
+                   axis.line = element_line(colour = "black"),
+                   panel.border = element_blank(),
+                   #strip.background = element_rect(fill="#FFFFFF", size=0),
+                   strip.background = element_blank(),
+                   strip.text = element_text(size=14),
+                   plot.margin = unit(c(0,0.2,0.3,0.2), "cm")) # clockwise from top
+  
+# saved as pdf 7.5 x 4
+```
+
+Top: Figure 1 in paper.<br>
+Predictions. On the vertical axis are attributions of happiness following an outcome, and on the horizontal axes are how “good” or “bad” the outcome is. Overall, happiness attributions should increase with the “goodness” of the outcome. Predictions for attributions to oneself are given in solid lines, while attributions to others are given in dashed lines. (a) Predictions from a simple “happier than average” bias that is context-independent. (b) Predictions from an “increased sensitivity” account: attributions to others are more sensitive to changes in the outcome. (c) Combining both (a) and (b).
+
+
+
+
+
+#Study 1
+
+```{r study1-self-other, echo=FALSE, messages=FALSE, warning=FALSE}
+# Reading in the data.
+# The data is in wide form: each participant is appears in 1 row, and each participant responds to 10 trials.
+study1.wide <- read.csv('data/study1data.csv', header=T)
+# table(study1.wide$firstPerson) ## firstPerson = 1 if they were in the Self Condition, 0 otherwise.
+# 102 first peron, 98 third person
+
+
+# gender 1 = F, 2 = M.
+
+
+# for Trial specific variables
+# "variable.X" is the value of that variable for the X-th trial. So, for example, "happy.1" is the response to "happy" , on the first trial. 
+# spinnerID : ID of the particular spinner
+# payoff1 : payoff of the lowest value on the wheel
+# payoff2 : payoff of the 2nd value on the wheel
+# payoff3 : payoff of the highest value on the wheel
+# prob1   : probability of the lowest value on the wheel (i.e., size of sector)
+# prob1   : probability of the 2nd value on the wheel (i.e., size of sector)
+# prob1   : probability of the highest value on the wheel (i.e., size of sector)
+# win     : actual amount 'won' on the trial. must be one of (payoff1, payoff2, payoff3)
+# winProb : probability that corresponds to the amount won. similarly, must be one of (prob1, prob2, prob3)
+# angleProp : angle proportion. ranges from 0 to 1. indicates where in the winning sector the wheel landed on.
+#            for example, if win = payoff2 (means that the wheel landed in the 2nd sector), 
+#                         then angleProp near 0 means that the wheel landed in the 2nd sector, but very close to the 1st sector. angleProp near 1 means the wheel landed closer to the 3rd sector. 0.5 means it landed equally far from both 1st and 3rd sectors. See previous paper, Ong, Zaki, & Goodman (2015) for more details.
+# reactionTime: self-explanatory.
+
+
+# There are other individual difference variables where the .X just refers to the answer to the X-th item on that questionnaire. For example, RSEArray.4 is the answer to the 4th question on the Rosenberg Self Esteem scale
+# measures:
+# socComp: some social comparison questions I came up with
+# RSE: Rosenberg Self Esteem
+# LOTR: Life Orientation Test, Revised
+# PHQ: Patient-Health Questionnaire-2
+# SINS: Single-Item Narcissm Scale
+
+
+
+
+# this is using a helper function I wrote to convert the data from wide form into long form.
+study1 <- processData2(study1.wide,
+                        variableList = c("spinnerID", "payoff1", "payoff2", "payoff3", 
+                                         "prob1", "prob2", "prob3",
+                                         "winChoice", "win", "winProb",
+                                         "angleProp", "reactionTime",
+                                         "happy", "sad", "anger", "surprise", 
+                                         "disgust", "fear", "content", "disapp"), 
+                            idVarList = c("workerid", "gender", "age", "firstPerson"),
+                            numTrials = 10)
+
+# Calculating Expected Value and Prediction Error
+study1$EV = study1$prob1*study1$payoff1 + study1$prob2*study1$payoff2 + study1$prob3*study1$payoff3
+study1$PE = study1$win - study1$EV
+
+# Creating this other dummy variable.
+study1$thirdPerson = factor(1-study1$firstPerson)
+
+# creating emotion composites
+study1$positive = (study1$happy + study1$content)/2
+study1$negative = (study1$sad + study1$anger + study1$disgust + study1$disapp)/4
+```
+
+
+```{r study1-figures1, fig.width=6, fig.height=4, echo=FALSE}
+ggplot(data=study1, aes(x=PE, y=happy, fill=thirdPerson, color=thirdPerson, linetype=thirdPerson)) + 
+  geom_point(position=position_jitter(width=0.25,height=0.25), alpha=0.6) + geom_smooth(method='lm', size=1) +
+  theme_bw() + xlab('Prediction Error') + ylab('Happy') + scale_fill_brewer(palette="Set1", name="Experimental\nCondition", breaks=c("0", "1"), labels=c("Self", "Other")) + scale_color_brewer(palette="Set1", name="Experimental\nCondition", breaks=c("0", "1"), labels=c("Self", "Other")) +
+  scale_linetype_manual(values=c(1, 2), name="Experimental\nCondition", breaks=c("0", "1"), labels=c("Self", "Other")) + my_theme
+# 6 by 4
+
+ggplot(data=study1, aes(x=PE, y=disapp, fill=thirdPerson, color=thirdPerson, linetype=thirdPerson)) + 
+  geom_point(position=position_jitter(width=0.25,height=0.25), alpha=0.6) + geom_smooth(method='lm', size=1) +
+  theme_bw() + xlab('Prediction Error') + ylab('Disappointment') + scale_fill_brewer(palette="Set1", name="Experimental\nCondition", breaks=c("0", "1"), labels=c("Self", "Other")) + scale_color_brewer(palette="Set1", name="Experimental\nCondition", breaks=c("0", "1"), labels=c("Self", "Other")) +
+  scale_linetype_manual(values=c(1, 2), name="Experimental\nCondition", breaks=c("0", "1"), labels=c("Self", "Other")) + my_theme
+# 6 by 4
+```
+
+Top: Figure 3 in paper.<br>
+Participants’ attributions of happiness and disappointment to themselves (in red) and others (blue) as a function of PE. Data points are jittered for visibility, with best linear fits overlaid. 
+
+
+
+```{r study1-modeling, echo=FALSE, messages=FALSE}
+#####
+# Study 1 -- Start Analysis
+#####
+
+# Run this part to get the statistics reported in the paper
+
+# interactions
+s1model1sum = summary(lmer(happy ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
+#  s1model1sum$coeff[4,1]
+#  s1model1sum$coeff[4,1] - 1.96 * s1model1sum$coeff[4,2]
+#  s1model1sum$coeff[4,1] + 1.96 * s1model1sum$coeff[4,2]
+#  s1model1sum$coeff[4,3]
+#  2*(1-pt(abs(s1model1sum$coeff[4,3]),196))
+s1model2sum = summary(lmer(content ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
+#  s1model2sum$coeff[4,1]
+#  s1model2sum$coeff[4,1] - 1.96 * s1model2sum$coeff[4,2]
+#  s1model2sum$coeff[4,1] + 1.96 * s1model2sum$coeff[4,2]
+#  s1model2sum$coeff[4,3]
+#  2*(1-pt(abs(s1model2sum$coeff[4,3]),196))
+s1model3sum = summary(lmer(sad ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
+#  s1model3sum$coeff[4,1]
+#  s1model3sum$coeff[4,1] - 1.96 * s1model3sum$coeff[4,2]
+#  s1model3sum$coeff[4,1] + 1.96 * s1model3sum$coeff[4,2]
+#  s1model3sum$coeff[4,3]
+#  2*(1-pt(abs(s1model3sum$coeff[4,3]),196))
+s1model4sum = summary(lmer(anger ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
+#  s1model4sum$coeff[4,1]
+#  s1model4sum$coeff[4,1] - 1.96 * s1model4sum$coeff[4,2]
+#  s1model4sum$coeff[4,1] + 1.96 * s1model4sum$coeff[4,2]
+#  s1model4sum$coeff[4,3]
+#  2*(1-pt(abs(s1model4sum$coeff[4,3]),196))
+s1model5sum = summary(lmer(disgust ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
+#  s1model5sum$coeff[4,1]
+#  s1model5sum$coeff[4,1] - 1.96 * s1model5sum$coeff[4,2]
+#  s1model5sum$coeff[4,1] + 1.96 * s1model5sum$coeff[4,2]
+#  s1model5sum$coeff[4,3]
+#  2*(1-pt(abs(s1model5sum$coeff[4,3]),196))
+s1model6sum = summary(lmer(disapp ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
+#s1model6sum$coeff[4,1]
+#  s1model6sum$coeff[4,1] - 1.96 * s1model6sum$coeff[4,2]
+#  s1model6sum$coeff[4,1] + 1.96 * s1model6sum$coeff[4,2]
+#  s1model6sum$coeff[4,3]
+#  2*(1-pt(abs(s1model6sum$coeff[4,3]),196))
+s1model7sum = summary(lmer(surprise ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
+#s1model7sum$coeff[4,1]
+#  s1model7sum$coeff[4,1] - 1.96 * s1model7sum$coeff[4,2]
+#  s1model7sum$coeff[4,1] + 1.96 * s1model7sum$coeff[4,2]
+#  s1model7sum$coeff[4,3]
+#  2*(1-pt(abs(s1model7sum$coeff[4,3]),196))
+s1model8sum = summary(lmer(fear ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
+#s1model8sum$coeff[4,1]
+#  s1model8sum$coeff[4,1] - 1.96 * s1model8sum$coeff[4,2]
+#  s1model8sum$coeff[4,1] + 1.96 * s1model8sum$coeff[4,2]
+#  s1model8sum$coeff[4,3]
+#  2*(1-pt(abs(s1model8sum$coeff[4,3]),196))
+
+
+
+s1model9sum = summary(lmer(positive ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
+s1model10sum = summary(lmer(negative ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
+
+
+```
+
+
+
+#### Study 1 Results
+
+Emotion | <u>Simple Effect</u> <br> b [95\% CI] | <br> t | <br> p | <u>Reward Sensitivity (Interaction)</u> <br> b [95\% CI] | <br> t | <br> p
+--- | --- | --- | --- | --- | --- | --- 
+Happy | `r format(round(s1model1sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model1sum$coeff[3,1] - 1.96 * s1model1sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model1sum$coeff[3,1] + 1.96 * s1model1sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model1sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model1sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model1sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model1sum$coeff[4,1] - 1.96 * s1model1sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model1sum$coeff[4,1] + 1.96 * s1model1sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model1sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model1sum$coeff[4,3]),196)), 3), nsmall=3)`
+Content | `r format(round(s1model2sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model2sum$coeff[3,1] - 1.96 * s1model2sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model2sum$coeff[3,1] + 1.96 * s1model2sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model2sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model2sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model2sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model2sum$coeff[4,1] - 1.96 * s1model2sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model2sum$coeff[4,1] + 1.96 * s1model2sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model2sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model2sum$coeff[4,3]),196)), 3), nsmall=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+Positive Composite | `r format(round(s1model9sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model9sum$coeff[3,1] - 1.96 * s1model9sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model9sum$coeff[3,1] + 1.96 * s1model9sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model9sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model9sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model9sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model9sum$coeff[4,1] - 1.96 * s1model9sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model9sum$coeff[4,1] + 1.96 * s1model9sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model9sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model9sum$coeff[4,3]),196)), 3), nsmall=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+Sad | `r format(round(s1model3sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model3sum$coeff[3,1] - 1.96 * s1model3sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model3sum$coeff[3,1] + 1.96 * s1model3sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model3sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model3sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model3sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model3sum$coeff[4,1] - 1.96 * s1model3sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model3sum$coeff[4,1] + 1.96 * s1model3sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model3sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model3sum$coeff[4,3]),196)), 3), nsmall=3)`
+Anger | `r format(round(s1model4sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model4sum$coeff[3,1] - 1.96 * s1model4sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model4sum$coeff[3,1] + 1.96 * s1model4sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model4sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model4sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model4sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model4sum$coeff[4,1] - 1.96 * s1model4sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model4sum$coeff[4,1] + 1.96 * s1model4sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model4sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model4sum$coeff[4,3]),196)), 3), nsmall=3)`
+Disgust | `r format(round(s1model5sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model5sum$coeff[3,1] - 1.96 * s1model5sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model5sum$coeff[3,1] + 1.96 * s1model5sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model5sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model5sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model5sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model5sum$coeff[4,1] - 1.96 * s1model5sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model5sum$coeff[4,1] + 1.96 * s1model5sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model5sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model5sum$coeff[4,3]),196)), 3), nsmall=3)`
+Disappointment | `r format(round(s1model6sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model6sum$coeff[3,1] - 1.96 * s1model6sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model6sum$coeff[3,1] + 1.96 * s1model6sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model6sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model6sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model6sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model6sum$coeff[4,1] - 1.96 * s1model6sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model6sum$coeff[4,1] + 1.96 * s1model6sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model6sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model6sum$coeff[4,3]),196)), 3), nsmall=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+Negative Composite | `r format(round(s1model10sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model10sum$coeff[3,1] - 1.96 * s1model10sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model10sum$coeff[3,1] + 1.96 * s1model10sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model10sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model10sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model10sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model10sum$coeff[4,1] - 1.96 * s1model10sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model10sum$coeff[4,1] + 1.96 * s1model10sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model10sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model10sum$coeff[4,3]),196)), 3), nsmall=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; 
+Surprise | `r format(round(s1model7sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model7sum$coeff[3,1] - 1.96 * s1model7sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model7sum$coeff[3,1] + 1.96 * s1model7sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model7sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model7sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model7sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model7sum$coeff[4,1] - 1.96 * s1model7sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model7sum$coeff[4,1] + 1.96 * s1model7sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model7sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model7sum$coeff[4,3]),196)), 3), nsmall=3)`
+Fear | `r format(round(s1model8sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model8sum$coeff[3,1] - 1.96 * s1model8sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model8sum$coeff[3,1] + 1.96 * s1model8sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model8sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model8sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model8sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model8sum$coeff[4,1] - 1.96 * s1model8sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model8sum$coeff[4,1] + 1.96 * s1model8sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model8sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model8sum$coeff[4,3]),196)), 3), nsmall=3)`
+
+Top: Table 1 in paper. <br>
+Study 1 results. Each row indicates the results of one model predicting one emotion (or emotion composite). Left: Coefficients on the simple effect of condition (i.e. the contrast Other-Self at PE=0) in the mixed models. Right: Reward sensitivity, or the coefficient on the Condition*PE interaction term in the mixed models. (n.s. not significant, * p<.05, ** p<.01, *** p<.001)
+
+
+
+
+
+```{r study1-figures2, fig.height=6, fig.width=8.5, echo=FALSE}
+study1DF = data.frame(Contrast = factor(rep(c("Other-Self Simple Effect (at PE=0)", "Condition Interaction with PE"),8),
+                                           levels=c("Other-Self Simple Effect (at PE=0)", "Condition Interaction with PE")),
+                         Emotion = factor(rep(c("Happy", "Content", "Sad", "Anger", 
+                                                "Disgust", "Disappointment", "Surprise", "Fear"),each=2),
+                                      levels = c("Happy", "Content", "Sad", "Anger", 
+                                                 "Disgust", "Disappointment",
+                                                 "Surprise", "Fear")),
+                           coef = c(s1model1sum$coefficients[3,1],
+                                    s1model1sum$coefficients[4,1],
+                                    s1model2sum$coefficients[3,1],
+                                    s1model2sum$coefficients[4,1],
+                                    s1model3sum$coefficients[3,1],
+                                    s1model3sum$coefficients[4,1],
+                                    s1model4sum$coefficients[3,1],
+                                    s1model4sum$coefficients[4,1],
+                                    s1model5sum$coefficients[3,1],
+                                    s1model5sum$coefficients[4,1],
+                                    s1model6sum$coefficients[3,1],
+                                    s1model6sum$coefficients[4,1],
+                                    s1model7sum$coefficients[3,1],
+                                    s1model7sum$coefficients[4,1],
+                                    s1model8sum$coefficients[3,1],
+                                    s1model8sum$coefficients[4,1]),
+                          se = c(s1model1sum$coefficients[3,2],
+                                 s1model1sum$coefficients[4,2],
+                                    s1model2sum$coefficients[3,2],
+                                    s1model2sum$coefficients[4,2],
+                                    s1model3sum$coefficients[3,2],
+                                    s1model3sum$coefficients[4,2],
+                                    s1model4sum$coefficients[3,2],
+                                    s1model4sum$coefficients[4,2],
+                                    s1model5sum$coefficients[3,2],
+                                    s1model5sum$coefficients[4,2],
+                                    s1model6sum$coefficients[3,2],
+                                    s1model6sum$coefficients[4,2],
+                                    s1model7sum$coefficients[3,2],
+                                    s1model7sum$coefficients[4,2],
+                                    s1model8sum$coefficients[3,2],
+                                    s1model8sum$coefficients[4,2]))
+
+study1DF$ci.h = 1.96 * study1DF$se
+study1DF$ci.l = 1.96 * study1DF$se
+
+
+ggplot(data=study1DF, aes(x=Emotion, y=coef, fill=Emotion)) + 
+  geom_bar(stat="identity", position=position_dodge(), colour="black") +
+  geom_errorbar(aes(ymin=coef - ci.l, ymax=coef + ci.h), size=.3, width=.2, position=position_dodge(.9)) +
+  scale_fill_brewer(palette="Set1") + facet_wrap(~Contrast, ncol=1, scales="free") +
+  theme_bw() + xlab("Emotion") + ylab("Magnitude of Coefficients (b's)") +
+  theme(legend.position="none",
+        strip.background = element_rect(fill="#FFFFFF"), 
+        strip.text = element_text(size=12), 
+        axis.text = element_text(size=12),
+        axis.title.x = element_text(size=14, vjust=-0.2),
+        axis.title.y = element_text(size=14, vjust=0.8),
+        legend.text = element_text(size=12),
+        title = element_text(size=18, vjust=1),
+        panel.grid = element_blank())
+# 8.5 by 6
+```
+
+Top (not in paper): Graph of coefficients of individual emotions for Study 1. (Basically a graphical representation of the coefficients in Table 1). Error bars represent 95% CIs
+
+
+
+```{r study1-collapsed-plot, fig.height=4, fig.width=6.5, echo=FALSE}
+## For positive and negative only
+
+study1DF_collapsed = data.frame(Emotion = factor(rep(c(rep("Positive",1), rep("Negative",1)),2),
+                                          levels = c("Positive", "Negative")),
+                           CoeffType = factor(rep(c("Distance simple effect (at PE=0)", "Interaction with PE"),each=2),
+                                           levels=c("Distance simple effect (at PE=0)", "Interaction with PE")),
+                         Coef = c(s1model9sum$coefficients[3,1],
+                                  s1model10sum$coefficients[3,1],
+                                  s1model9sum$coefficients[4,1],
+                                  s1model10sum$coefficients[4,1]),
+                         SE = c(s1model9sum$coefficients[3,2],
+                                s1model10sum$coefficients[3,2],
+                                s1model9sum$coefficients[4,2],
+                                s1model10sum$coefficients[4,2])
+                         )
+study1DF_collapsed$CI = 1.96*study1DF_collapsed$SE
+
+ggplot(data=study1DF_collapsed, aes(x=Emotion, y=Coef, fill=Emotion)) + 
+  geom_bar(stat="identity", position=position_dodge(), colour="black") +
+  geom_errorbar(aes(ymin=Coef-CI, ymax=Coef+CI), size=.3, width=.2, position=position_dodge(.9)) + 
+  facet_wrap(~CoeffType, ncol=2, scales="free") + 
+  #facet_grid(~CoeffType, ncol=1, scales="free") + 
+  scale_fill_brewer(palette="Set1") +
+  theme_bw() + xlab("Emotion") + ylab("Magnitude of Coefficients (b's)") +
+  theme(legend.position="none",
+        strip.background = element_rect(fill="#FFFFFF"), 
+        strip.text = element_text(size=12), 
+        axis.text = element_text(size=12),
+        axis.title.x = element_text(size=14, vjust=-0.2),
+        axis.title.y = element_text(size=14, vjust=0.8),
+        legend.text = element_text(size=12),
+        title = element_text(size=18, vjust=1),
+        panel.grid = element_blank())
+# pdf 6.5 by 4
+```
+
+Top (not in paper): Similar graph, but only for the positive/engative emotion composites.
+
+
+# Study 2
+
+```{r distance-data-preamble, echo=FALSE, warning=FALSE}
+study2.wide <- read.csv('data/study2data.csv', header=T)
+for(j in 1:10) {
+  # make sure these variables are logical, rather than numeric
+  varString = paste("BFItargetSimilarity.", as.character(j), sep="")
+  study2.wide[,varString] = as.logical(study2.wide[,varString])
+}
+
+# Due to some very bad code writing when I was much more inexperienced (and subsequent use of that legacy code...), the DV names in Study 2 are "q1" through "q8", which, unhelpfully, correspond to:
+# "happy", "sad", "anger", "surprise", "disgust", "fear", "content", "disapp"
+# in that order. 
+# I have sinced changed my scripts to give the DVs more meaningful names, but I did not want to touch the raw data, so unfortunately the variable names are still "q1"-"q8".
+
+# removing those who failed attention check
+# "BFI.X" is the participant's response to the Xth question of the BFI-10
+# "BFIAttentionCheck.X" is the participant's attention check response ("what did your partner respond?")
+# "BFItargetSimilarity.X" is the truth: that is, what the program said that the partner responded.
+# Thus,
+# BFI.X == BFIAttentionCheck.X   is whether participant gave the same response to himself as to Attention Check
+#     and this should be equal to BFItargetSimilarity.X     if participant gave the correct answer.
+
+attentionCheckAnswers = ( ( study2.wide[, c("BFI.1","BFI.2", "BFI.3", "BFI.4", "BFI.5", 
+                                             "BFI.6", "BFI.7","BFI.8", "BFI.9", "BFI.10")] 
+                             == study2.wide[, c("BFIAttentionCheck.1","BFIAttentionCheck.2", "BFIAttentionCheck.3",
+                                                "BFIAttentionCheck.4", "BFIAttentionCheck.5", "BFIAttentionCheck.6",
+                                                "BFIAttentionCheck.7","BFIAttentionCheck.8", "BFIAttentionCheck.9",
+                                                "BFIAttentionCheck.10")])
+                          ==study2.wide[,c("BFItargetSimilarity.1","BFItargetSimilarity.2", "BFItargetSimilarity.3",
+                                           "BFItargetSimilarity.4", "BFItargetSimilarity.5", "BFItargetSimilarity.6",
+                                           "BFItargetSimilarity.7","BFItargetSimilarity.8", "BFItargetSimilarity.9",
+                                           "BFItargetSimilarity.10")] )
+study2.wide$use = rowSums(attentionCheckAnswers)==10
+# use = 1 only if they answered all 10 attention check questions right.
+study2.wide = study2.wide[study2.wide$use==1,] # dropping those who failed attention check
+
+
+# converting data to long format as in Study 1
+study2 <- processData(study2.wide,
+                        variableList = c("spinnerID", "payoff1", "payoff2", "payoff3", 
+                                         "prob1", "prob2", "prob3",
+                                         "winChoice", "win", "winProb",
+                                         "angleProp", "reactionTime",
+                                         "happy", "sad", "anger", "surprise", 
+                                         "disgust", "fear", "content", "disapp"), 
+                            idVarList = c("workerid", "gender", "age", "socialDistance", "closeness",
+                                          "iOS", "srSimilarity", "srLiking", "srEmpathy"),
+                            numTrials = 10)
+
+## below is with BFI included
+# study2 <- processData(study2.wide,
+#                         variableList = c("spinnerID", "payoff1", "payoff2", "payoff3", 
+#                                          "prob1", "prob2", "prob3",
+#                                          "winChoice", "win", "winProb",
+#                                          "angleProp", "reactionTime",
+#                                          "happy", "sad", "anger", "surprise", 
+#                                          "disgust", "fear", "content", "disapp"), 
+#                             idVarList = c("workerid", "gender", "age", "socialDistance", "closeness",
+#                                           "iOS", "srSimilarity", "srLiking", "srEmpathy",
+#                                           "BFI.1", "BFI.2", "BFI.3", "BFI.4", "BFI.5", 
+#                                           "BFI.6", "BFI.7", "BFI.8", "BFI.9", "BFI.10"),
+#                             numTrials = 10)
+
+
+
+# Calculating Expected Value and Prediction Error
+study2$EV = study2$prob1*study2$payoff1 + study2$prob2*study2$payoff2 + study2$prob3*study2$payoff3
+study2$PE = study2$win - study2$EV
+
+
+study2$socialSimilarity = 10 - study2$socialDistance
+
+# creating emotion composites
+study2$positive = (study2$happy + study2$content)/2
+study2$negative = (study2$sad + study2$anger + study2$disgust + study2$disapp)/4
+
+```
+
+```{r distance-manip-plots, eval=TRUE, echo=FALSE, message=FALSE, fig.height=8.5, fig.width=8.5}
+# Manipulation checks
+library(car)
+scatterplotMatrix(~socialDistance + iOS + srSimilarity + srLiking + srEmpathy, data=study2.wide)
+
+# cor.test(study2.wide$socialDistance, study2.wide$iOS)
+# cor.test(study2.wide$socialDistance, study2.wide$srSimilarity)
+# cor.test(study2.wide$socialDistance, study2.wide$srLiking)
+# cor.test(study2.wide$socialDistance, study2.wide$srEmpathy)
+```
+
+Top (not in paper): correlation plots of the manipulation checks with our manipualted socialDistance variable. iOS: Inclusion of Self in Other Scale. Others: Similarity, Liking, Empathy. See paper for details.
+
+```{r distance-manip-plots2, eval=TRUE, echo=FALSE, message=FALSE, fig.height=4, fig.width=8.5}
+study2.wide$sr_iOS = study2.wide$iOS*9/100
+study2ManipulationMelt = melt(study2.wide, id=c("workerid", "socialDistance"), 
+                                measure = c("sr_iOS", "srSimilarity", "srLiking", "srEmpathy"),
+                                variable.name = "ManipulationCheck")
+study2ManipulationMelt$ManipulationCheck = factor(study2ManipulationMelt$ManipulationCheck,
+                                                    levels = c("sr_iOS", "srSimilarity", "srLiking", "srEmpathy"),
+                                                    labels = c("IOS", "Similarity", "Liking", "Empathy"))
+ggplot(data=study2ManipulationMelt, aes(x=socialDistance, y=value, color=ManipulationCheck)) + 
+  geom_point(size=2, alpha=0.3) + geom_smooth(method=lm, se=FALSE) + 
+  scale_y_continuous(limits=c(0,9)) + scale_x_continuous(breaks=c(1, 3, 5, 7, 9)) + 
+  theme_bw() + xlab("Social Distance to Target") + ylab("Value of Manipulation Check") +
+  theme(strip.background = element_rect(fill="#FFFFFF"), 
+        strip.text = element_text(size=12), 
+        axis.text = element_text(size=12),
+        axis.title.x = element_text(size=14, vjust=-0.2),
+        axis.title.y = element_text(size=14, vjust=0.8),
+        legend.text = element_text(size=12),
+        title = element_text(size=18, vjust=1),
+        panel.grid = element_blank())
+```
+
+Top (not in paper): scatterplot of the manipulation checks against our manipualted socialDistance variable.
+
+
+The manipulation checks confirmed that the psychological distance manipulation had the intended effect on participants’ subjective psychological distance to the target. The manipulated psychological distance was negatively correlated with participants’ ratings on the IOS (r=`r cor(study2.wide$socialDistance, study2.wide$iOS)`; t(236)=`r cor.test(study2.wide$socialDistance, study2.wide$iOS)$statistic`, p<.0001), similarity judgments (r=`r cor(study2.wide$socialDistance, study2.wide$srSimilarity)`; t(236)=`r cor.test(study2.wide$socialDistance, study2.wide$srSimilarity)$statistic`, p<.0001), liking judgments (r=`r cor(study2.wide$socialDistance, study2.wide$srLiking)`; t(236)=`r cor.test(study2.wide$socialDistance, study2.wide$srLiking)$statistic`, p<.0001), and empathy ratings with the target (r=`r cor(study2.wide$socialDistance, study2.wide$srEmpathy)`; t(236)=`r cor.test(study2.wide$socialDistance, study2.wide$srEmpathy)$statistic`, p<.0001).
+
+
+
+```{r study2-analysis, echo=FALSE, results='hide'}
+socDistanceModel1 <- lmer(happy    ~ PE * socialDistance + (1|workerid) + (1|spinnerID), data = study2); 
+socDistanceModel2 <- lmer(content  ~ PE * socialDistance + (1|workerid) + (1|spinnerID), data = study2); 
+socDistanceModel3 <- lmer(sad      ~ PE * socialDistance + (1|workerid) + (1|spinnerID), data = study2); 
+socDistanceModel4 <- lmer(anger    ~ PE * socialDistance + (1|workerid) + (1|spinnerID), data = study2); 
+socDistanceModel5 <- lmer(disgust  ~ PE * socialDistance + (1|workerid) + (1|spinnerID), data = study2); 
+socDistanceModel6 <- lmer(disapp   ~ PE * socialDistance + (1|workerid) + (1|spinnerID), data = study2); 
+socDistanceModel7 <- lmer(surprise ~ PE * socialDistance + (1|workerid) + (1|spinnerID), data = study2); 
+socDistanceModel8 <- lmer(fear     ~ PE * socialDistance + (1|workerid) + (1|spinnerID), data = study2); 
+
+#interaction is row number 4, socDist itself is 3.
+s2model1sum=summary(socDistanceModel1)
+s2model2sum=summary(socDistanceModel2)
+s2model3sum=summary(socDistanceModel3)
+s2model4sum=summary(socDistanceModel4)
+s2model5sum=summary(socDistanceModel5)
+s2model6sum=summary(socDistanceModel6)
+s2model7sum=summary(socDistanceModel7)
+s2model8sum=summary(socDistanceModel8)
+
+
+socDistanceModel9 <- lmer(positive  ~ PE * socialDistance + (1|workerid) + (1|spinnerID), data = study2); 
+socDistanceModel10 <- lmer(negative ~ PE * socialDistance + (1|workerid) + (1|spinnerID), data = study2); 
+
+
+s2model9sum=summary(socDistanceModel9)
+s2model10sum=summary(socDistanceModel10)
+s2model9sum$coeff[4,1]
+s2model9sum$coeff[4,1] - 1.96 * s2model9sum$coeff[4,2]
+s2model9sum$coeff[4,1] + 1.96 * s2model9sum$coeff[4,2]
+s2model9sum$coeff[4,3]
+2*(1-pt(abs(s2model9sum$coeff[4,3]),232))
+
+s2model10sum$coeff[4,1]
+s2model10sum$coeff[4,1] - 1.96 * s2model10sum$coeff[4,2]
+s2model10sum$coeff[4,1] + 1.96 * s2model10sum$coeff[4,2]
+s2model10sum$coeff[4,3]
+2*(1-pt(abs(s2model10sum$coeff[4,3]),232))
+
+
+
+#study2$openness = 1-1*(study2$BFI.5) + 1*(study2$BFI.10)
+#study2$neuroticism = 1-1*(study2$BFI.4) + 1*(study2$BFI.9)
+#study2$conscientiousness = 1-1*(study2$BFI.3) + 1*(study2$BFI.8)
+#study2$agreeableness = 1-1*(study2$BFI.7) + 1*(study2$BFI.2)
+#study2$extraversion = 1-1*(study2$BFI.1) + 1*(study2$BFI.6)
+
+#socDistanceModel9 <- lmer(positive  ~ PE * socialDistance + BFI.9 + (1|workerid) + (1|spinnerID), data = study2); 
+#socDistanceModel10 <- lmer(negative ~ PE * socialDistance + BFI.5 + (1|workerid) + (1|spinnerID), data = study2); 
+
+#socDistanceModel9 <- lmer(positive  ~ PE * socialDistance + (agreeableness + extraversion) * socialDistance + (1|workerid) + (1|spinnerID), data = study2); 
+#socDistanceModel10 <- lmer(negative ~ PE * socialDistance + (agreeableness + extraversion) * socialDistance + (1|workerid) + (1|spinnerID), data = study2); 
+#summary(socDistanceModel9)
+#summary(socDistanceModel10)
+
+
+```
+
+
+#### Study 2 Regression Results
+
+Emotion | <u>Simple Effect</u> <br> b [95\% CI] | <br> t | <br> p | <u>Reward Sensitivity (Interaction)</u> <br> b [95\% CI] | <br> t | <br> p
+--- | --- | --- | --- | --- | --- | --- 
+Happy | `r format(round(s2model1sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model1sum$coeff[3,1] - 1.96 * s2model1sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model1sum$coeff[3,1] + 1.96 * s2model1sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model1sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model1sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model1sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model1sum$coeff[4,1] - 1.96 * s2model1sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model1sum$coeff[4,1] + 1.96 * s2model1sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model1sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model1sum$coeff[4,3]),196)), 3), digits=3)`
+Content | `r format(round(s2model2sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model2sum$coeff[3,1] - 1.96 * s2model2sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model2sum$coeff[3,1] + 1.96 * s2model2sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model2sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model2sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model2sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model2sum$coeff[4,1] - 1.96 * s2model2sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model2sum$coeff[4,1] + 1.96 * s2model2sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model2sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model2sum$coeff[4,3]),196)), 3), digits=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+Positive Composite | `r format(round(s2model9sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model9sum$coeff[3,1] - 1.96 * s2model9sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model9sum$coeff[3,1] + 1.96 * s2model9sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model9sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model9sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model9sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model9sum$coeff[4,1] - 1.96 * s2model9sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model9sum$coeff[4,1] + 1.96 * s2model9sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model9sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model9sum$coeff[4,3]),196)), 3), digits=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+Sad | `r format(round(s2model3sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model3sum$coeff[3,1] - 1.96 * s2model3sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model3sum$coeff[3,1] + 1.96 * s2model3sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model3sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model3sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model3sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model3sum$coeff[4,1] - 1.96 * s2model3sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model3sum$coeff[4,1] + 1.96 * s2model3sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model3sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model3sum$coeff[4,3]),196)), 3), digits=3)`
+Anger | `r format(round(s2model4sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model4sum$coeff[3,1] - 1.96 * s2model4sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model4sum$coeff[3,1] + 1.96 * s2model4sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model4sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model4sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model4sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model4sum$coeff[4,1] - 1.96 * s2model4sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model4sum$coeff[4,1] + 1.96 * s2model4sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model4sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model4sum$coeff[4,3]),196)), 3), digits=3)`
+Disgust | `r format(round(s2model5sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model5sum$coeff[3,1] - 1.96 * s2model5sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model5sum$coeff[3,1] + 1.96 * s2model5sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model5sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model5sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model5sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model5sum$coeff[4,1] - 1.96 * s2model5sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model5sum$coeff[4,1] + 1.96 * s2model5sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model5sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model5sum$coeff[4,3]),196)), 3), digits=3)`
+Disappointment | `r format(round(s2model6sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model6sum$coeff[3,1] - 1.96 * s2model6sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model6sum$coeff[3,1] + 1.96 * s2model6sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model6sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model6sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model6sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model6sum$coeff[4,1] - 1.96 * s2model6sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model6sum$coeff[4,1] + 1.96 * s2model6sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model6sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model6sum$coeff[4,3]),196)), 3), digits=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+Negative Composite | `r format(round(s2model10sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model10sum$coeff[3,1] - 1.96 * s2model10sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model10sum$coeff[3,1] + 1.96 * s2model10sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model10sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model10sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model10sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model10sum$coeff[4,1] - 1.96 * s2model10sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model10sum$coeff[4,1] + 1.96 * s2model10sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model10sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model10sum$coeff[4,3]),196)), 3), digits=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+Surprise | `r format(round(s2model7sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model7sum$coeff[3,1] - 1.96 * s2model7sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model7sum$coeff[3,1] + 1.96 * s2model7sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model7sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model7sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model7sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model7sum$coeff[4,1] - 1.96 * s2model7sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model7sum$coeff[4,1] + 1.96 * s2model7sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model7sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model7sum$coeff[4,3]),196)), 3), digits=3)`
+Fear | `r format(round(s2model8sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model8sum$coeff[3,1] - 1.96 * s2model8sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model8sum$coeff[3,1] + 1.96 * s2model8sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model8sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model8sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model8sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model8sum$coeff[4,1] - 1.96 * s2model8sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model8sum$coeff[4,1] + 1.96 * s2model8sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model8sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model8sum$coeff[4,3]),196)), 3), digits=3)`
+
+
+
+```{r study2-plot-all-emotions, fig.height=5, fig.width=8.5, echo=FALSE}
+## for all emotions
+study2DF = data.frame(Emotion = factor(rep(c(rep("Happy",1), rep("Content",1), rep("Sad",1), rep("Anger",1),
+                                            rep("Disgust",1), rep("Disappointment",1), 
+                                            rep("Surprise",1), rep("Fear",1)),2),
+                                          levels = c("Happy", "Content",
+                                                     "Sad", "Anger",  
+                                                     "Disgust", "Disappointment", 
+                                                     "Surprise", "Fear")),
+                           CoeffType = factor(rep(c("Distance Interaction with PE", "Distance simple effect (at PE=0)"),each=8),
+                                           levels=c("Distance simple effect (at PE=0)", "Distance Interaction with PE")),
+                         Coef = c(summary(socDistanceModel1)$coefficients[4,1],
+                                  summary(socDistanceModel2)$coefficients[4,1],
+                                  summary(socDistanceModel3)$coefficients[4,1],
+                                  summary(socDistanceModel4)$coefficients[4,1],
+                                  summary(socDistanceModel5)$coefficients[4,1],
+                                  summary(socDistanceModel6)$coefficients[4,1],
+                                  summary(socDistanceModel7)$coefficients[4,1],
+                                  summary(socDistanceModel8)$coefficients[4,1],
+                                  summary(socDistanceModel1)$coefficients[3,1],
+                                  summary(socDistanceModel2)$coefficients[3,1],
+                                  summary(socDistanceModel3)$coefficients[3,1],
+                                  summary(socDistanceModel4)$coefficients[3,1],
+                                  summary(socDistanceModel5)$coefficients[3,1],
+                                  summary(socDistanceModel6)$coefficients[3,1],
+                                  summary(socDistanceModel7)$coefficients[3,1],
+                                  summary(socDistanceModel8)$coefficients[3,1]),
+                         SE = c(summary(socDistanceModel1)$coefficients[4,2],
+                                summary(socDistanceModel2)$coefficients[4,2],
+                                summary(socDistanceModel3)$coefficients[4,2],
+                                summary(socDistanceModel4)$coefficients[4,2],
+                                summary(socDistanceModel5)$coefficients[4,2],
+                                summary(socDistanceModel6)$coefficients[4,2],
+                                summary(socDistanceModel7)$coefficients[4,2],
+                                summary(socDistanceModel8)$coefficients[4,2],
+                                summary(socDistanceModel1)$coefficients[3,2],
+                                summary(socDistanceModel2)$coefficients[3,2],
+                                summary(socDistanceModel3)$coefficients[3,2],
+                                summary(socDistanceModel4)$coefficients[3,2],
+                                summary(socDistanceModel5)$coefficients[3,2],
+                                summary(socDistanceModel6)$coefficients[3,2],
+                                summary(socDistanceModel7)$coefficients[3,2],
+                                summary(socDistanceModel8)$coefficients[3,2])
+                         )
+study2DF$CI = 1.96*study2DF$SE
+
+ggplot(data=study2DF, aes(x=Emotion, y=Coef, fill=Emotion)) + 
+  geom_bar(stat="identity", position=position_dodge(), colour="black") +
+  geom_errorbar(aes(ymin=Coef-CI, ymax=Coef+CI), size=.3, width=.2, position=position_dodge(.9)) + facet_wrap(~CoeffType, ncol=1, scales="free") + scale_fill_brewer(palette="Set1") +
+  theme_bw() + xlab("Emotion") + ylab("Magnitude of Coefficients (b's)") +
+  theme(legend.position="none",
+        strip.background = element_rect(fill="#FFFFFF"), 
+        strip.text = element_text(size=12), 
+        axis.text = element_text(size=12),
+        axis.title.x = element_text(size=14, vjust=-0.2),
+        axis.title.y = element_text(size=14, vjust=0.8),
+        legend.text = element_text(size=12),
+        title = element_text(size=18, vjust=1),
+        panel.grid = element_blank())
+# pdf 8.5 by 6
+
+```
+
+Top (not in paper): Graph of coefficients of individual emotions for Study 2. Error bars represent 95% CIs.
+
+
+```{r study2-plot, fig.height=4, fig.width=6.5, echo=FALSE}
+## For positive and negative only
+study2DF_collapsed = data.frame(Emotion = factor(rep(c(rep("Positive",1), rep("Negative",1)),2),
+                                          levels = c("Positive", "Negative")),
+                           CoeffType = factor(rep(c("Distance simple effect (at PE=0)", "Interaction with PE"),each=2),
+                                           levels=c("Distance simple effect (at PE=0)", "Interaction with PE")),
+                         Coef = c(summary(socDistanceModel9)$coefficients[3,1],
+                                  summary(socDistanceModel10)$coefficients[3,1],
+                                  summary(socDistanceModel9)$coefficients[4,1],
+                                  summary(socDistanceModel10)$coefficients[4,1]),
+                         SE = c(summary(socDistanceModel9)$coefficients[3,2],
+                                summary(socDistanceModel10)$coefficients[3,2],
+                                summary(socDistanceModel9)$coefficients[4,2],
+                                summary(socDistanceModel10)$coefficients[4,2])
+                         )
+study2DF_collapsed$CI = 1.96*study2DF_collapsed$SE
+
+study2DF_collapsed$CoeffTypeRenamed = factor(study2DF_collapsed$CoeffType,
+                                             levels=c("Distance simple effect (at PE=0)",
+                                                      "Interaction with PE"),
+                                             labels=c("Distance simple effect (at PE=0)",
+                                                      "Reward Sensitivity x Distance"))
+ggplot(data=study2DF_collapsed, aes(x=Emotion, y=Coef, fill=Emotion)) + 
+  geom_bar(stat="identity", position=position_dodge(), colour="black") +
+  geom_errorbar(aes(ymin=Coef-CI, ymax=Coef+CI), size=.3, width=.2, position=position_dodge(.9)) + 
+  facet_wrap(~CoeffTypeRenamed, ncol=2, scales="free") + 
+  #facet_grid(~CoeffType, ncol=1, scales="free") + 
+  scale_fill_brewer(palette="Set2") +
+  theme_bw() + xlab("Composite Emotions") + ylab("Magnitude of Coefficients (b's)") +
+  theme(legend.position="none",
+        strip.background = element_rect(fill="#FFFFFF"), 
+        strip.text = element_text(size=12), 
+        axis.text = element_text(size=12),
+        axis.title.x = element_text(size=14, vjust=-0.2),
+        axis.title.y = element_text(size=14, vjust=0.8),
+        legend.text = element_text(size=12),
+        title = element_text(size=18, vjust=1),
+        panel.grid = element_blank())
+# pdf 6.5 by 4
+```
+
+Top (Figure 4 in paper): <br>
+Study 2 results: Left: Simple effect (i.e., the effect of social distance at PE=0). Right: Reward sensitivity across social distance (i.e., interaction of social distance with PE). Error bars represent 95% Confidence Intervals. 
+
+
+
+# Study 3
+
+```{r wheelTime-data-preamble, echo=FALSE}
+study3 <- read.csv('data/study3data.csv', header=T)
+# study 3 has already been preprocessed into long form data, because there were several different datasets lying around and I wanted to combine them into one file.
+
+# this is a 2x2 between-participant design {self/other} x {now/future}.
+# firstPerson = 1 if participants were in the "self" condition, and 0 if they were in the "other" condition
+#    thirdPerson = 1 - firstPerson
+# retrospective = 1 if participants were in the "now" condition, and 0 if they were in the "future" condition
+#    prospective = 1 - retrospective
+
+# other variables are the same as Studies 1/2
+
+# calculating EV and PE
+study3$EV = study3$prob1*study3$payoff1 + study3$prob2*study3$payoff2 + study3$prob3*study3$payoff3
+study3$PE = study3$win - study3$EV
+
+# creating composites
+study3$positive = (study3$happy + study3$content)/2
+study3$negative = (study3$sad + study3$anger + study3$disgust + study3$disapp)/4
+```
+
+
+
+```{r study3-analysis, echo=FALSE, results='hide'}
+# want "self-now" to be the base condition, so use "thirdPerson" and "prospective" as the dummy variables.
+mod1sum = summary(lmer(happy    ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3))
+mod2sum = summary(lmer(content  ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)) 
+
+mod3sum = summary(lmer(sad      ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)) 
+mod4sum = summary(lmer(anger    ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)) 
+mod5sum = summary(lmer(disgust  ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)) 
+mod6sum = summary(lmer(disapp   ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3))
+
+mod7sum = summary(lmer(surprise ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3))
+mod8sum = summary(lmer(fear     ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)) 
+
+mod9sum = summary(lmer(positive     ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)) 
+mod10sum = summary(lmer(negative     ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)) 
+
+# currentValue = 5
+# mod9sum$coefficients[currentValue,1]
+# mod9sum$coefficients[currentValue,1] - 1.96 * mod9sum$coefficients[currentValue,2]
+# mod9sum$coefficients[currentValue,1] + 1.96 * mod9sum$coefficients[currentValue,2]
+# mod9sum$coefficients[currentValue,3]
+# 2*(1-pt(abs(mod9sum$coefficients[currentValue,3]),378))
+# 
+# #currentValue = 4
+# mod10sum$coefficients[currentValue,1]
+# mod10sum$coefficients[currentValue,1] - 1.96 * mod10sum$coefficients[currentValue,2]
+# mod10sum$coefficients[currentValue,1] + 1.96 * mod10sum$coefficients[currentValue,2]
+# mod10sum$coefficients[currentValue,3]
+# 2*(1-pt(abs(mod10sum$coefficients[currentValue,3]),378))
+```
+
+
+```{r study3-coeff-plot-2, echo=FALSE, fig.height=5, fig.width=8.5}
+study3PlotDF = data.frame(Emotion = factor(rep(c(rep("Happy",1), rep("Content",1), rep("Sad",1), rep("Anger",1),
+                                            rep("Disgust",1), rep("Disappointment",1), 
+                                            rep("Surprise",1), rep("Fear",1)), 4),
+                                          levels = c("Happy", "Content",
+                                                     "Sad", "Anger",  
+                                                     "Disgust", "Disappointment", 
+                                                     "Surprise", "Fear")),
+                          Contrast = factor( rep(c(rep("Other-Self ", 8), rep("Future-Now", 8)), 2),
+                                             levels=c("Other-Self ", "Future-Now")),
+                          CoeffType = factor(rep(c("Condition Interaction with PE", 
+                                                   "Condition simple effect (at PE=0)"),each=16),
+                                           levels=c("Condition simple effect (at PE=0)", 
+                                                    "Condition Interaction with PE")),
+                         Coef = c(mod1sum$coefficients[5,1],
+                                  mod2sum$coefficients[5,1],
+                                  mod3sum$coefficients[5,1],
+                                  mod4sum$coefficients[5,1],
+                                  mod5sum$coefficients[5,1],
+                                  mod6sum$coefficients[5,1],
+                                  mod7sum$coefficients[5,1],
+                                  mod8sum$coefficients[5,1],
+                                  mod1sum$coefficients[6,1],
+                                  mod2sum$coefficients[6,1],
+                                  mod3sum$coefficients[6,1],
+                                  mod4sum$coefficients[6,1],
+                                  mod5sum$coefficients[6,1],
+                                  mod6sum$coefficients[6,1],
+                                  mod7sum$coefficients[6,1],
+                                  mod8sum$coefficients[6,1],
+                                  mod1sum$coefficients[3,1],
+                                  mod2sum$coefficients[3,1],
+                                  mod3sum$coefficients[3,1],
+                                  mod4sum$coefficients[3,1],
+                                  mod5sum$coefficients[3,1],
+                                  mod6sum$coefficients[3,1],
+                                  mod7sum$coefficients[3,1],
+                                  mod8sum$coefficients[3,1],
+                                  mod1sum$coefficients[4,1],
+                                  mod2sum$coefficients[4,1],
+                                  mod3sum$coefficients[4,1],
+                                  mod4sum$coefficients[4,1],
+                                  mod5sum$coefficients[4,1],
+                                  mod6sum$coefficients[4,1],
+                                  mod7sum$coefficients[4,1],
+                                  mod8sum$coefficients[4,1]),
+                         SE = c(mod1sum$coefficients[5,2],
+                                mod2sum$coefficients[5,2],
+                                mod3sum$coefficients[5,2],
+                                mod4sum$coefficients[5,2],
+                                mod5sum$coefficients[5,2],
+                                mod6sum$coefficients[5,2],
+                                mod7sum$coefficients[5,2],
+                                mod8sum$coefficients[5,2],
+                                mod1sum$coefficients[6,2],
+                                mod2sum$coefficients[6,2],
+                                mod3sum$coefficients[6,2],
+                                mod4sum$coefficients[6,2],
+                                mod5sum$coefficients[6,2],
+                                mod6sum$coefficients[6,2],
+                                mod7sum$coefficients[6,2],
+                                mod8sum$coefficients[6,2],
+                                mod1sum$coefficients[3,2],
+                                mod2sum$coefficients[3,2],
+                                mod3sum$coefficients[3,2],
+                                mod4sum$coefficients[3,2],
+                                mod5sum$coefficients[3,2],
+                                mod6sum$coefficients[3,2],
+                                mod7sum$coefficients[3,2],
+                                mod8sum$coefficients[3,2],
+                                mod1sum$coefficients[4,2],
+                                mod2sum$coefficients[4,2],
+                                mod3sum$coefficients[4,2],
+                                mod4sum$coefficients[4,2],
+                                mod5sum$coefficients[4,2],
+                                mod6sum$coefficients[4,2],
+                                mod7sum$coefficients[4,2],
+                                mod8sum$coefficients[4,2])
+                         )
+
+study3PlotDF$CI = 1.96*study3PlotDF$SE
+
+ggplot(data=study3PlotDF, aes(x=Emotion, y=Coef, fill=Contrast)) + 
+  geom_bar(stat="identity", position=position_dodge(), colour="black") +
+  geom_errorbar(aes(ymin=Coef-CI, ymax=Coef+CI), size=.3, width=.2, position=position_dodge(.9)) +
+  #scale_fill_brewer(palette="Set3")
+  scale_fill_manual(values=cbbwPal2) + facet_wrap(~CoeffType, ncol=1, scales="free") +
+  theme_bw() + xlab("Emotion") + ylab("Magnitude of Coefficients (b's)") +
+  theme(legend.position="top",
+        strip.background = element_rect(fill="#FFFFFF"), 
+        strip.text = element_text(size=12), 
+        axis.text = element_text(size=12),
+        axis.title.x = element_text(size=14, vjust=-0.2),
+        axis.title.y = element_text(size=14, vjust=0.8),
+        legend.text = element_text(size=12),
+        title = element_text(size=18, vjust=1),
+        panel.grid = element_blank())
+# 8.5 x 5
+
+```
+
+Top (not in paper): Graph of coefficients of individual emotions for Study 3. Error bars represent 95% CIs.
+
+
+```{r study3-coeff-plot, echo=FALSE, fig.height=4, fig.width=6.5}
+## for positive / negative only
+
+study3PlotDF_collapsed = data.frame(Emotion = factor(rep(c(rep("Positive",1), rep("Negative",1)), 4),
+                                          levels = c("Positive", "Negative")),
+                          Contrast = factor( rep(c(rep("Self-Other ", 2), rep("Now-Future", 2)), 2),
+                                             levels=c("Self-Other ", "Now-Future")),
+                          CoeffType = factor(rep(c("Condition Interaction with PE", 
+                                                   "Condition simple effect (at PE=0)"), each=4),
+                                           levels=c("Condition simple effect (at PE=0)", 
+                                                    "Condition Interaction with PE")),
+                         Coef = c(mod9sum$coefficients[5,1],
+                                  mod10sum$coefficients[5,1],
+                                  mod9sum$coefficients[6,1],
+                                  mod10sum$coefficients[6,1],
+                                  mod9sum$coefficients[3,1],
+                                  mod10sum$coefficients[3,1],
+                                  mod9sum$coefficients[4,1],
+                                  mod10sum$coefficients[4,1]),
+                         SE = c(mod9sum$coefficients[5,2],
+                                mod10sum$coefficients[5,2],
+                                mod9sum$coefficients[6,2],
+                                mod10sum$coefficients[6,2],
+                                mod9sum$coefficients[3,2],
+                                mod10sum$coefficients[3,2],
+                                mod9sum$coefficients[4,2],
+                                mod10sum$coefficients[4,2])
+                         )
+study3PlotDF_collapsed$CI = 1.96*study3PlotDF_collapsed$SE
+
+
+study3PlotDF_collapsed$CoeffTypeRenamed = factor(study3PlotDF_collapsed$CoeffType,
+                                             levels=c("Condition simple effect (at PE=0)",
+                                                      "Condition Interaction with PE"),
+                                             labels=c("Distance simple effect (at PE=0)",
+                                                      "Reward Sensitivity x Distance"))
+
+ggplot(data=study3PlotDF_collapsed, aes(x=Emotion, y=Coef, fill=Contrast)) + 
+  geom_bar(stat="identity", position=position_dodge(), colour="black") +
+  geom_errorbar(aes(ymin=Coef-CI, ymax=Coef+CI), size=.3, width=.2, position=position_dodge(.9)) +
+  #scale_fill_brewer(palette="Set3") 
+  scale_fill_manual(values=cbbwPal2)+ facet_wrap(~CoeffTypeRenamed, ncol=2, scales="free") +
+  theme_bw() + xlab("Composite Emotions") + ylab("Magnitude of Coefficients (b's)") +
+  theme(legend.position="top",
+        strip.background = element_rect(fill="#FFFFFF"), 
+        strip.text = element_text(size=12), 
+        axis.text = element_text(size=12),
+        axis.title.x = element_text(size=14, vjust=-0.2),
+        axis.title.y = element_text(size=14, vjust=0.8),
+        legend.text = element_text(size=12),
+        title = element_text(size=18, vjust=1),
+        panel.grid = element_blank())
+#6.5 x 4
+```
+
+
+Top (Figure 5 in paper): <br>
+Study 3 results: Left: Simple effect by distance (i.e., the effect of the distance manipulations at PE=0). Right: Reward sensitivity across psychological distance (i.e., the interactions of the two distance manipulations with PE). Error bars represent 95% Confidence Intervals. 
+
+
+## Three Way Interactions
+##### Interactions
+Happy (b=`r mod1sum$coeff[8,1]` [`r mod1sum$coeff[8,1] - 1.96 * mod1sum$coeff[8,2]`, `r mod1sum$coeff[8,1] + 1.96 * mod1sum$coeff[8,2]`], t(390)=`r mod1sum$coeff[8,3]` , p=`r 2*(1-pt(abs(mod1sum$coeff[8,3]),390))`)
+
+Content (b=`r mod2sum$coeff[8,1]` [`r mod2sum$coeff[8,1] - 1.96 * mod2sum$coeff[8,2]`, `r  mod2sum$coeff[8,1] + 1.96 * mod2sum$coeff[8,2]`], t(390)=`r mod2sum$coeff[8,3]` , p=`r 2*(1-pt(abs(mod2sum$coeff[8,3]),390))`)
+
+Sad (b=`r mod3sum$coeff[8,1]` [`r mod3sum$coeff[8,1] - 1.96 * mod3sum$coeff[8,2]`, `r mod3sum$coeff[8,1] + 1.96 * mod3sum$coeff[8,2]`], t(390)=`r mod3sum$coeff[8,3]` , p=`r 2*(1-pt(abs(mod3sum$coeff[8,3]),390))`)
+
+Anger (b=`r mod4sum$coeff[8,1]` [`r mod4sum$coeff[8,1] - 1.96 * mod4sum$coeff[8,2]`, `r mod4sum$coeff[8,1] + 1.96 * mod4sum$coeff[8,2]`], t(390)=`r mod4sum$coeff[8,3]` , p=`r 2*(1-pt(abs(mod4sum$coeff[8,3]),390))`)
+
+Disgust (b=`r mod5sum$coeff[8,1]` [`r mod5sum$coeff[8,1] - 1.96 * mod5sum$coeff[8,2]`, `r mod5sum$coeff[8,1] + 1.96 * mod5sum$coeff[8,2]`], t(390)=`r mod5sum$coeff[8,3]` , p=`r 2*(1-pt(abs(mod5sum$coeff[8,3]),390))`)
+
+Disappointment (b=`r mod6sum$coeff[8,1]` [`r mod6sum$coeff[8,1] - 1.96 * mod6sum$coeff[8,2]`, `r mod6sum$coeff[8,1] + 1.96 * mod6sum$coeff[8,2]`], t(390)=`r mod6sum$coeff[8,3]` , p=`r 2*(1-pt(abs(mod6sum$coeff[8,3]),390))`)
+
+Surprise (b=`r mod7sum$coeff[8,1]` [`r mod7sum$coeff[8,1] - 1.96 * mod7sum$coeff[8,2]`, `r mod7sum$coeff[8,1] + 1.96 * mod7sum$coeff[8,2]`], t(390)=`r mod7sum$coeff[8,3]` , p=`r 2*(1-pt(abs(mod7sum$coeff[8,3]),390))`)
+
+Fear (b=`r mod8sum$coeff[8,1]` [`r mod8sum$coeff[8,1] - 1.96 * mod8sum$coeff[8,2]`, `r mod8sum$coeff[8,1] + 1.96 * mod8sum$coeff[8,2]`], t(390)=`r mod8sum$coeff[8,3]` , p=`r 2*(1-pt(abs(mod8sum$coeff[8,3]),390))`)
+
+
+
+
+## With Third Person
+##### Interactions
+Happy (b=`r mod1sum$coeff[5,1]` [`r mod1sum$coeff[5,1] - 1.96 * mod1sum$coeff[5,2]`, `r mod1sum$coeff[5,1] + 1.96 * mod1sum$coeff[5,2]`], t(390)=`r mod1sum$coeff[5,3]` , p=`r 2*(1-pt(abs(mod1sum$coeff[5,3]),390))`)
+
+Content (b=`r mod2sum$coeff[5,1]` [`r mod2sum$coeff[5,1] - 1.96 * mod2sum$coeff[5,2]`, `r  mod2sum$coeff[5,1] + 1.96 * mod2sum$coeff[5,2]`], t(390)=`r mod2sum$coeff[5,3]` , p=`r 2*(1-pt(abs(mod2sum$coeff[5,3]),390))`)
+
+Sad (b=`r mod3sum$coeff[5,1]` [`r mod3sum$coeff[5,1] - 1.96 * mod3sum$coeff[5,2]`, `r mod3sum$coeff[5,1] + 1.96 * mod3sum$coeff[5,2]`], t(390)=`r mod3sum$coeff[5,3]` , p=`r 2*(1-pt(abs(mod3sum$coeff[5,3]),390))`)
+
+Anger (b=`r mod4sum$coeff[5,1]` [`r mod4sum$coeff[5,1] - 1.96 * mod4sum$coeff[5,2]`, `r mod4sum$coeff[5,1] + 1.96 * mod4sum$coeff[5,2]`], t(390)=`r mod4sum$coeff[5,3]` , p=`r 2*(1-pt(abs(mod4sum$coeff[5,3]),390))`)
+
+Disgust (b=`r mod5sum$coeff[5,1]` [`r mod5sum$coeff[5,1] - 1.96 * mod5sum$coeff[5,2]`, `r mod5sum$coeff[5,1] + 1.96 * mod5sum$coeff[5,2]`], t(390)=`r mod5sum$coeff[5,3]` , p=`r 2*(1-pt(abs(mod5sum$coeff[5,3]),390))`)
+
+Disappointment (b=`r mod6sum$coeff[5,1]` [`r mod6sum$coeff[5,1] - 1.96 * mod6sum$coeff[5,2]`, `r mod6sum$coeff[5,1] + 1.96 * mod6sum$coeff[5,2]`], t(390)=`r mod6sum$coeff[5,3]` , p=`r 2*(1-pt(abs(mod6sum$coeff[5,3]),390))`)
+
+Surprise (b=`r mod7sum$coeff[5,1]` [`r mod7sum$coeff[5,1] - 1.96 * mod7sum$coeff[5,2]`, `r mod7sum$coeff[5,1] + 1.96 * mod7sum$coeff[5,2]`], t(390)=`r mod7sum$coeff[5,3]` , p=`r 2*(1-pt(abs(mod7sum$coeff[5,3]),390))`)
+
+Fear (b=`r mod8sum$coeff[5,1]` [`r mod8sum$coeff[5,1] - 1.96 * mod8sum$coeff[5,2]`, `r mod8sum$coeff[5,1] + 1.96 * mod8sum$coeff[5,2]`], t(390)=`r mod8sum$coeff[5,3]` , p=`r 2*(1-pt(abs(mod8sum$coeff[5,3]),390))`)
+
+
+
+##### Simple Effects
+Happy (b=`r mod1sum$coeff[3,1]` [`r mod1sum$coeff[3,1] - 1.96 * mod1sum$coeff[3,2]`, `r mod1sum$coeff[3,1] + 1.96 * mod1sum$coeff[3,2]`], t(390)=`r mod1sum$coeff[3,3]` , p=`r 2*(1-pt(abs(mod1sum$coeff[3,3]),390))`)
+
+Content (b=`r mod2sum$coeff[3,1]` [`r mod2sum$coeff[3,1] - 1.96 * mod2sum$coeff[3,2]`, `r mod2sum$coeff[3,1] + 1.96 * mod2sum$coeff[3,2]`], t(390)=`r mod2sum$coeff[3,3]` , p=`r 2*(1-pt(abs(mod2sum$coeff[3,3]),390))`)
+
+Sad (b=`r mod3sum$coeff[3,1]` [`r mod3sum$coeff[3,1] - 1.96 * mod3sum$coeff[3,2]`, `r mod3sum$coeff[3,1] + 1.96 * mod3sum$coeff[3,2]`], t(390)=`r mod3sum$coeff[3,3]` , p=`r 2*(1-pt(abs(mod3sum$coeff[3,3]),390))`)
+
+Anger (b=`r mod4sum$coeff[3,1]` [`r mod4sum$coeff[3,1] - 1.96 * mod4sum$coeff[3,2]`, `r mod4sum$coeff[3,1] + 1.96 * mod4sum$coeff[3,2]`], t(390)=`r mod4sum$coeff[3,3]` , p=`r 2*(1-pt(abs(mod4sum$coeff[3,3]),390))`)
+
+Disgust (b=`r mod5sum$coeff[3,1]` [`r mod5sum$coeff[3,1] - 1.96 * mod5sum$coeff[3,2]`, `r mod5sum$coeff[3,1] + 1.96 * mod5sum$coeff[3,2]`], t(390)=`r mod5sum$coeff[3,3]` , p=`r 2*(1-pt(abs(mod5sum$coeff[3,3]),390))`)
+
+Disappointment (b=`r mod6sum$coeff[3,1]` [`r mod6sum$coeff[3,1] - 1.96 * mod6sum$coeff[3,2]`, `r mod6sum$coeff[3,1] + 1.96 * mod6sum$coeff[3,2]`], t(390)=`r mod6sum$coeff[3,3]` , p=`r 2*(1-pt(abs(mod6sum$coeff[3,3]),390))`)
+
+Surprise (b=`r mod7sum$coeff[3,1]` [`r mod7sum$coeff[3,1] - 1.96 * mod7sum$coeff[3,2]`, `r mod7sum$coeff[3,1] + 1.96 * mod7sum$coeff[3,2]`], t(390)=`r mod7sum$coeff[3,3]` , p=`r 2*(1-pt(abs(mod7sum$coeff[3,3]),390))`)
+
+Fear (b=`r mod8sum$coeff[3,1]` [`r mod8sum$coeff[3,1] - 1.96 * mod8sum$coeff[3,2]`, `r mod8sum$coeff[3,1] + 1.96 * mod8sum$coeff[3,2]`], t(390)=`r mod8sum$coeff[3,3]` , p=`r 2*(1-pt(abs(mod8sum$coeff[3,3]),390))`)
+
+
+
+## With Future
+##### Interactions
+Happy (b=`r mod1sum$coeff[6,1]` [`r mod1sum$coeff[6,1] - 1.96 * mod1sum$coeff[6,2]`, `r mod1sum$coeff[6,1] + 1.96 * mod1sum$coeff[6,2]`], t(390)=`r mod1sum$coeff[6,3]` , p=`r 2*(1-pt(abs(mod1sum$coeff[6,3]),390))`)
+
+Content (b=`r mod2sum$coeff[6,1]` [`r mod2sum$coeff[6,1] - 1.96 * mod2sum$coeff[6,2]`, `r  mod2sum$coeff[6,1] + 1.96 * mod2sum$coeff[6,2]`], t(390)=`r mod2sum$coeff[6,3]` , p=`r 2*(1-pt(abs(mod2sum$coeff[6,3]),390))`)
+
+Sad (b=`r mod3sum$coeff[6,1]` [`r mod3sum$coeff[6,1] - 1.96 * mod3sum$coeff[6,2]`, `r mod3sum$coeff[6,1] + 1.96 * mod3sum$coeff[6,2]`], t(390)=`r mod3sum$coeff[6,3]` , p=`r 2*(1-pt(abs(mod3sum$coeff[6,3]),390))`)
+
+Anger (b=`r mod4sum$coeff[6,1]` [`r mod4sum$coeff[6,1] - 1.96 * mod4sum$coeff[6,2]`, `r mod4sum$coeff[6,1] + 1.96 * mod4sum$coeff[6,2]`], t(390)=`r mod4sum$coeff[6,3]` , p=`r 2*(1-pt(abs(mod4sum$coeff[6,3]),390))`)
+
+Disgust (b=`r mod5sum$coeff[6,1]` [`r mod5sum$coeff[6,1] - 1.96 * mod5sum$coeff[6,2]`, `r mod5sum$coeff[6,1] + 1.96 * mod5sum$coeff[6,2]`], t(390)=`r mod5sum$coeff[6,3]` , p=`r 2*(1-pt(abs(mod5sum$coeff[6,3]),390))`)
+
+Disappointment (b=`r mod6sum$coeff[6,1]` [`r mod6sum$coeff[6,1] - 1.96 * mod6sum$coeff[6,2]`, `r mod6sum$coeff[6,1] + 1.96 * mod6sum$coeff[6,2]`], t(390)=`r mod6sum$coeff[6,3]` , p=`r 2*(1-pt(abs(mod6sum$coeff[6,3]),390))`)
+
+Surprise (b=`r mod7sum$coeff[6,1]` [`r mod7sum$coeff[6,1] - 1.96 * mod7sum$coeff[6,2]`, `r mod7sum$coeff[6,1] + 1.96 * mod7sum$coeff[6,2]`], t(390)=`r mod7sum$coeff[6,3]` , p=`r 2*(1-pt(abs(mod7sum$coeff[6,3]),390))`)
+
+Fear (b=`r mod8sum$coeff[6,1]` [`r mod8sum$coeff[6,1] - 1.96 * mod8sum$coeff[6,2]`, `r mod8sum$coeff[6,1] + 1.96 * mod8sum$coeff[6,2]`], t(390)=`r mod8sum$coeff[6,3]` , p=`r 2*(1-pt(abs(mod8sum$coeff[6,3]),390))`)
+
+
+
+##### Simple Effects
+Happy (b=`r mod1sum$coeff[4,1]` [`r mod1sum$coeff[4,1] - 1.96 * mod1sum$coeff[4,2]`, `r mod1sum$coeff[4,1] + 1.96 * mod1sum$coeff[4,2]`], t(390)=`r mod1sum$coeff[4,3]` , p=`r 2*(1-pt(abs(mod1sum$coeff[4,3]),390))`)
+
+Content (b=`r mod2sum$coeff[4,1]` [`r mod2sum$coeff[4,1] - 1.96 * mod2sum$coeff[4,2]`, `r mod2sum$coeff[4,1] + 1.96 * mod2sum$coeff[4,2]`], t(390)=`r mod2sum$coeff[4,3]` , p=`r 2*(1-pt(abs(mod2sum$coeff[4,3]),390))`)
+
+Sad (b=`r mod3sum$coeff[4,1]` [`r mod3sum$coeff[4,1] - 1.96 * mod3sum$coeff[4,2]`, `r mod3sum$coeff[4,1] + 1.96 * mod3sum$coeff[4,2]`], t(390)=`r mod3sum$coeff[4,3]` , p=`r 2*(1-pt(abs(mod3sum$coeff[4,3]),390))`)
+
+Anger (b=`r mod4sum$coeff[4,1]` [`r mod4sum$coeff[4,1] - 1.96 * mod4sum$coeff[4,2]`, `r mod4sum$coeff[4,1] + 1.96 * mod4sum$coeff[4,2]`], t(390)=`r mod4sum$coeff[4,3]` , p=`r 2*(1-pt(abs(mod4sum$coeff[4,3]),390))`)
+
+Disgust (b=`r mod5sum$coeff[4,1]` [`r mod5sum$coeff[4,1] - 1.96 * mod5sum$coeff[4,2]`, `r mod5sum$coeff[4,1] + 1.96 * mod5sum$coeff[4,2]`], t(390)=`r mod5sum$coeff[4,3]` , p=`r 2*(1-pt(abs(mod5sum$coeff[4,3]),390))`)
+
+Disappointment (b=`r mod6sum$coeff[4,1]` [`r mod6sum$coeff[4,1] - 1.96 * mod6sum$coeff[4,2]`, `r mod6sum$coeff[4,1] + 1.96 * mod6sum$coeff[4,2]`], t(390)=`r mod6sum$coeff[4,3]` , p=`r 2*(1-pt(abs(mod6sum$coeff[4,3]),390))`)
+
+Surprise (b=`r mod7sum$coeff[4,1]` [`r mod7sum$coeff[4,1] - 1.96 * mod7sum$coeff[4,2]`, `r mod7sum$coeff[4,1] + 1.96 * mod7sum$coeff[4,2]`], t(390)=`r mod7sum$coeff[4,3]` , p=`r 2*(1-pt(abs(mod7sum$coeff[4,3]),390))`)
+
+Fear (b=`r mod8sum$coeff[4,1]` [`r mod8sum$coeff[4,1] - 1.96 * mod8sum$coeff[4,2]`, `r mod8sum$coeff[4,1] + 1.96 * mod8sum$coeff[4,2]`], t(390)=`r mod8sum$coeff[4,3]` , p=`r 2*(1-pt(abs(mod8sum$coeff[4,3]),390))`)
+
+
+
+

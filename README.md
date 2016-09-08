@@ -11,15 +11,14 @@ This repository is maintained by Desmond Ong. Questions, comments, requests for 
 
 ### Data
 
-The data for the 3 experiments presented in the paper will be put ~~are~~ in the /data folder
+The data for the 3 studies presented in the paper will be put ~~are~~ in the /data folder
 
 
 
 ### Analysis code
 
-Analysis code will be ~~is~~ provided in happierAnalysis.Rmd (a R Markdown document). 
-
-The file will contain ~~contains~~ all the R code necessary to replicate the analyses reported in the paper. It has not been cleaned and formatted yet.
+Analysis code is provided in psychDistance_analysis.Rmd (a R Markdown document). The file contains all the R code necessary to replicate the analyses reported in the paper. 
+The R markdown file can also be neatly formatted into a nice html report: http://rawgit.com/desmond-ong/emotionPsychDistance/master/psychDistance_analysis.html
 
 
 
