@@ -3,7 +3,7 @@
 
 This repository contains materials for the following paper:
 
-Ong, D. C., Zaki, J., & Goodman, N. D. (in press). Happier than thou: An egocentric positivity bias in emotion attribution. *Emotion*.
+Ong, D. C., Goodman, N. D., & Zaki, J. (in press). Happier than thou? A self-enhancement bias in emotion attribution. *Emotion*.
 
 This repository is maintained by Desmond Ong. Questions, comments, requests for clarification or replication, etc, should be directed to desmond (dot) ong (at) stanford (dot) edu
 
