@@ -3,7 +3,7 @@
 
 This repository contains materials for the following paper:
 
-Ong, D. C., Zaki, J., & Goodman, N. D. (in prep). Happier than thou: An egocentric positivity bias in emotion attribution
+Ong, D. C., Zaki, J., & Goodman, N. D. (in press). Happier than thou: An egocentric positivity bias in emotion attribution. *Emotion*.
 
 This repository is maintained by Desmond Ong. Questions, comments, requests for clarification or replication, etc, should be directed to desmond (dot) ong (at) stanford (dot) edu
 
@@ -11,7 +11,7 @@ This repository is maintained by Desmond Ong. Questions, comments, requests for 
 
 ### Data
 
-The data for the 3 studies presented in the paper will be put ~~are~~ in the /data folder
+The data for the 3 studies presented in the paper are in the /data folder
 
 
 

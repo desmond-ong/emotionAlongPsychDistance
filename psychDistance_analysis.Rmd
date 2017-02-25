@@ -5,8 +5,13 @@ date: "February 29, 2016"
 output: html_document
 ---
 
+The following data file accompanies Ong, Goodman, & Zaki, which is in press at Emotion. It contains all the code needed to reproduce the analyses reported in the paper.
+
+
 ```{r preamble, echo=FALSE, message=FALSE}
 library(ggplot2)
+library(MuMIn) # for getting R^2 values using r.squaredGLMM(), after https://ecologyforacrowdedplanet.wordpress.com/2013/08/27/r-squared-in-mixed-models-the-easy-way/ and following Nakagawa and Schielzeth (2013) and Johnson (2014)
+
 source("http://web.stanford.edu/~dco/common/useful.R")
 source("http://web.stanford.edu/~dco/common/processData.R")
 
@@ -29,15 +34,15 @@ my_theme <-   theme(legend.position="top",
 
 # Introduction
 
-```{r predictions-figure, fig.width = 7.5, fig.height = 4, echo=FALSE, message=FALSE, warning=FALSE}
+```{r predictions-figure, fig.width = 8, fig.height = 4.2, echo=FALSE, message=FALSE, warning=FALSE}
 library(grid)
-predictionsFigDF = data.frame(panel = factor(c(rep("Simple Positive Bias",8), 
+predictionsFigDF = data.frame(panel = factor(c(rep("Global\nSelf Enhancement",8), 
                                                rep("Increased Sensitivity",8),
-                                               rep("Both",8)),
-                                             levels = c("Simple Positive Bias", "Increased Sensitivity",
-                                                        "Both"),
-                                             labels = c("a) Simple Positive Bias", 
-                                                        "b) Increased Sensitivity", "c) Both")),
+                                               rep("Contextualized\nSelf Enhancement",8)),
+                                             levels = c("Global\nSelf Enhancement", "Increased Sensitivity",
+                                                        "Contextualized\nSelf Enhancement"),
+                                             labels = c("a) Global\nSelf Enhancement", 
+                                                        "b) Increased Sensitivity", "c) Contextualized\nSelf Enhancement")),
                               Target = factor(rep(rep(c("Self","Other"),each=4),3),
                                              levels=c("Self", "Other"),
                                              labels=c(" Self    ", " Other ")),
@@ -51,21 +56,29 @@ predictionsFigDF = data.frame(panel = factor(c(rep("Simple Positive Bias",8),
                              )
 
 ggplot(predictionsFigDF, aes(x=PE, y=attribution, colour=Target, group=Target, linetype=Target)) + 
-  ylab("Judgments of Target's Happiness") + xlab("Goodness Of Outcome") + geom_line() + 
+  ylab("Judgments of Target's Emotional Valence\n") + xlab("Goodness Of Outcome") + geom_line() + 
   scale_colour_manual(values=blackGreyPalette) +
   facet_wrap( ~ panel, ncol=4, as.table=TRUE, drop=FALSE) +
-  scale_x_discrete(breaks=c("1", "2", "3", "4"),
-                      labels=c("Worse", "", "", "Better")) +
-  my_theme + theme(axis.ticks = element_blank(), 
-                   axis.text.y = element_blank(),
-                   axis.line = element_line(colour = "black"),
-                   panel.border = element_blank(),
-                   #strip.background = element_rect(fill="#FFFFFF", size=0),
-                   strip.background = element_blank(),
-                   strip.text = element_text(size=14),
-                   plot.margin = unit(c(0,0.2,0.3,0.2), "cm")) # clockwise from top
-  
+  scale_y_continuous(breaks=c(2.5, 8.6), labels=c("Negative", "Positive"), limits=c(1,8.5)) +
+  scale_x_continuous(breaks=c(1.2, 3.8), labels=c("Worse", "Better"), limits=c(0.8, 4.2)) + theme_bw() +
+  theme(legend.position="top", strip.background = element_blank(),
+        strip.text = element_text(size=14),
+        axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12, angle=90),
+        axis.ticks = element_blank(),
+        axis.line.x = element_line(colour = "black", size = 0.5),
+        axis.line.y = element_line(colour = "black", size = 0.5),
+        axis.title.x = element_text(size=14, vjust=-0.2),
+        axis.title.y = element_text(size=14, vjust=0.8),
+        legend.text = element_text(size=12),
+        title = element_text(size=18, vjust=1),
+        panel.grid = element_blank(),
+        panel.border = element_blank(),
+       plot.margin = unit(c(0,0.2,0.3,0.2), "cm")) # clockwise from top
+ 
+
 # saved as pdf 7.5 x 4
+# changed to 8 x 4.2
 ```
 
 Top: Figure 1 in paper.<br>
@@ -168,48 +181,56 @@ Participants’ attributions of happiness and disappointment to themselves (in r
 
 # interactions
 s1model1sum = summary(lmer(happy ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
+s1model1RSq = r.squaredGLMM(lmer(happy ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
 #  s1model1sum$coeff[4,1]
 #  s1model1sum$coeff[4,1] - 1.96 * s1model1sum$coeff[4,2]
 #  s1model1sum$coeff[4,1] + 1.96 * s1model1sum$coeff[4,2]
 #  s1model1sum$coeff[4,3]
 #  2*(1-pt(abs(s1model1sum$coeff[4,3]),196))
 s1model2sum = summary(lmer(content ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
+s1model2RSq = r.squaredGLMM(lmer(content ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
 #  s1model2sum$coeff[4,1]
 #  s1model2sum$coeff[4,1] - 1.96 * s1model2sum$coeff[4,2]
 #  s1model2sum$coeff[4,1] + 1.96 * s1model2sum$coeff[4,2]
 #  s1model2sum$coeff[4,3]
 #  2*(1-pt(abs(s1model2sum$coeff[4,3]),196))
 s1model3sum = summary(lmer(sad ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
+s1model3RSq = r.squaredGLMM(lmer(sad ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
 #  s1model3sum$coeff[4,1]
 #  s1model3sum$coeff[4,1] - 1.96 * s1model3sum$coeff[4,2]
 #  s1model3sum$coeff[4,1] + 1.96 * s1model3sum$coeff[4,2]
 #  s1model3sum$coeff[4,3]
 #  2*(1-pt(abs(s1model3sum$coeff[4,3]),196))
 s1model4sum = summary(lmer(anger ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
+s1model4RSq = r.squaredGLMM(lmer(anger ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
 #  s1model4sum$coeff[4,1]
 #  s1model4sum$coeff[4,1] - 1.96 * s1model4sum$coeff[4,2]
 #  s1model4sum$coeff[4,1] + 1.96 * s1model4sum$coeff[4,2]
 #  s1model4sum$coeff[4,3]
 #  2*(1-pt(abs(s1model4sum$coeff[4,3]),196))
 s1model5sum = summary(lmer(disgust ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
+s1model5RSq = r.squaredGLMM(lmer(disgust ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
 #  s1model5sum$coeff[4,1]
 #  s1model5sum$coeff[4,1] - 1.96 * s1model5sum$coeff[4,2]
 #  s1model5sum$coeff[4,1] + 1.96 * s1model5sum$coeff[4,2]
 #  s1model5sum$coeff[4,3]
 #  2*(1-pt(abs(s1model5sum$coeff[4,3]),196))
 s1model6sum = summary(lmer(disapp ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
+s1model6RSq = r.squaredGLMM(lmer(disapp ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
 #s1model6sum$coeff[4,1]
 #  s1model6sum$coeff[4,1] - 1.96 * s1model6sum$coeff[4,2]
 #  s1model6sum$coeff[4,1] + 1.96 * s1model6sum$coeff[4,2]
 #  s1model6sum$coeff[4,3]
 #  2*(1-pt(abs(s1model6sum$coeff[4,3]),196))
 s1model7sum = summary(lmer(surprise ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
+s1model7RSq = r.squaredGLMM(lmer(surprise ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
 #s1model7sum$coeff[4,1]
 #  s1model7sum$coeff[4,1] - 1.96 * s1model7sum$coeff[4,2]
 #  s1model7sum$coeff[4,1] + 1.96 * s1model7sum$coeff[4,2]
 #  s1model7sum$coeff[4,3]
 #  2*(1-pt(abs(s1model7sum$coeff[4,3]),196))
 s1model8sum = summary(lmer(fear ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
+s1model8RSq = r.squaredGLMM(lmer(fear ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
 #s1model8sum$coeff[4,1]
 #  s1model8sum$coeff[4,1] - 1.96 * s1model8sum$coeff[4,2]
 #  s1model8sum$coeff[4,1] + 1.96 * s1model8sum$coeff[4,2]
@@ -221,6 +242,10 @@ s1model8sum = summary(lmer(fear ~ PE * thirdPerson + (1|workerid) + (1|spinnerID
 s1model9sum = summary(lmer(positive ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
 s1model10sum = summary(lmer(negative ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
 
+s1model9RSq = r.squaredGLMM(lmer(positive ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
+s1model10RSq = r.squaredGLMM(lmer(negative ~ PE * thirdPerson + (1|workerid) + (1|spinnerID), study1))
+
+
 
 ```
 
@@ -228,26 +253,26 @@ s1model10sum = summary(lmer(negative ~ PE * thirdPerson + (1|workerid) + (1|spin
 
 #### Study 1 Results
 
-Emotion | <u>Simple Effect</u> <br> b [95\% CI] | <br> t | <br> p | <u>Reward Sensitivity (Interaction)</u> <br> b [95\% CI] | <br> t | <br> p
---- | --- | --- | --- | --- | --- | --- 
-Happy | `r format(round(s1model1sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model1sum$coeff[3,1] - 1.96 * s1model1sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model1sum$coeff[3,1] + 1.96 * s1model1sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model1sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model1sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model1sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model1sum$coeff[4,1] - 1.96 * s1model1sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model1sum$coeff[4,1] + 1.96 * s1model1sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model1sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model1sum$coeff[4,3]),196)), 3), nsmall=3)`
-Content | `r format(round(s1model2sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model2sum$coeff[3,1] - 1.96 * s1model2sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model2sum$coeff[3,1] + 1.96 * s1model2sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model2sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model2sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model2sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model2sum$coeff[4,1] - 1.96 * s1model2sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model2sum$coeff[4,1] + 1.96 * s1model2sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model2sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model2sum$coeff[4,3]),196)), 3), nsmall=3)`
+Emotion | <u>Simple Effect</u> <br> b [95\% CI] | <br> t | <br> p | <u>Reward Sensitivity (Interaction)</u> <br> b [95\% CI] | <br> t | <br> p | marginal R^2 | conditional R^2
+--- | ------- | --- | --- | ------- | --- | --- | --- | ---
+Happy | `r format(round(s1model1sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model1sum$coeff[3,1] - 1.96 * s1model1sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model1sum$coeff[3,1] + 1.96 * s1model1sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model1sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model1sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model1sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model1sum$coeff[4,1] - 1.96 * s1model1sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model1sum$coeff[4,1] + 1.96 * s1model1sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model1sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model1sum$coeff[4,3]),196)), 3), nsmall=3)` | `r format(round(s1model1RSq['R2m'], 3), nsmall=3)` | `r format(round(s1model1RSq['R2c'], 3), nsmall=3)`
+Content | `r format(round(s1model2sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model2sum$coeff[3,1] - 1.96 * s1model2sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model2sum$coeff[3,1] + 1.96 * s1model2sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model2sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model2sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model2sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model2sum$coeff[4,1] - 1.96 * s1model2sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model2sum$coeff[4,1] + 1.96 * s1model2sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model2sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model2sum$coeff[4,3]),196)), 3), nsmall=3)` | `r format(round(s1model2RSq['R2m'], 3), nsmall=3)` | `r format(round(s1model2RSq['R2c'], 3), nsmall=3)`
 &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
-Positive Composite | `r format(round(s1model9sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model9sum$coeff[3,1] - 1.96 * s1model9sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model9sum$coeff[3,1] + 1.96 * s1model9sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model9sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model9sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model9sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model9sum$coeff[4,1] - 1.96 * s1model9sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model9sum$coeff[4,1] + 1.96 * s1model9sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model9sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model9sum$coeff[4,3]),196)), 3), nsmall=3)`
-&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
-&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
-Sad | `r format(round(s1model3sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model3sum$coeff[3,1] - 1.96 * s1model3sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model3sum$coeff[3,1] + 1.96 * s1model3sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model3sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model3sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model3sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model3sum$coeff[4,1] - 1.96 * s1model3sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model3sum$coeff[4,1] + 1.96 * s1model3sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model3sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model3sum$coeff[4,3]),196)), 3), nsmall=3)`
-Anger | `r format(round(s1model4sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model4sum$coeff[3,1] - 1.96 * s1model4sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model4sum$coeff[3,1] + 1.96 * s1model4sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model4sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model4sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model4sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model4sum$coeff[4,1] - 1.96 * s1model4sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model4sum$coeff[4,1] + 1.96 * s1model4sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model4sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model4sum$coeff[4,3]),196)), 3), nsmall=3)`
-Disgust | `r format(round(s1model5sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model5sum$coeff[3,1] - 1.96 * s1model5sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model5sum$coeff[3,1] + 1.96 * s1model5sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model5sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model5sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model5sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model5sum$coeff[4,1] - 1.96 * s1model5sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model5sum$coeff[4,1] + 1.96 * s1model5sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model5sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model5sum$coeff[4,3]),196)), 3), nsmall=3)`
-Disappointment | `r format(round(s1model6sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model6sum$coeff[3,1] - 1.96 * s1model6sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model6sum$coeff[3,1] + 1.96 * s1model6sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model6sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model6sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model6sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model6sum$coeff[4,1] - 1.96 * s1model6sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model6sum$coeff[4,1] + 1.96 * s1model6sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model6sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model6sum$coeff[4,3]),196)), 3), nsmall=3)`
-&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
-Negative Composite | `r format(round(s1model10sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model10sum$coeff[3,1] - 1.96 * s1model10sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model10sum$coeff[3,1] + 1.96 * s1model10sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model10sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model10sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model10sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model10sum$coeff[4,1] - 1.96 * s1model10sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model10sum$coeff[4,1] + 1.96 * s1model10sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model10sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model10sum$coeff[4,3]),196)), 3), nsmall=3)`
-&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; 
-Surprise | `r format(round(s1model7sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model7sum$coeff[3,1] - 1.96 * s1model7sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model7sum$coeff[3,1] + 1.96 * s1model7sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model7sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model7sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model7sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model7sum$coeff[4,1] - 1.96 * s1model7sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model7sum$coeff[4,1] + 1.96 * s1model7sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model7sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model7sum$coeff[4,3]),196)), 3), nsmall=3)`
-Fear | `r format(round(s1model8sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model8sum$coeff[3,1] - 1.96 * s1model8sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model8sum$coeff[3,1] + 1.96 * s1model8sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model8sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model8sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model8sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model8sum$coeff[4,1] - 1.96 * s1model8sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model8sum$coeff[4,1] + 1.96 * s1model8sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model8sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model8sum$coeff[4,3]),196)), 3), nsmall=3)`
+Positive Composite | `r format(round(s1model9sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model9sum$coeff[3,1] - 1.96 * s1model9sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model9sum$coeff[3,1] + 1.96 * s1model9sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model9sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model9sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model9sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model9sum$coeff[4,1] - 1.96 * s1model9sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model9sum$coeff[4,1] + 1.96 * s1model9sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model9sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model9sum$coeff[4,3]),196)), 3), nsmall=3)` | `r format(round(s1model9RSq['R2m'], 3), nsmall=3)` | `r format(round(s1model9RSq['R2c'], 3), nsmall=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; 
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; 
+Sad | `r format(round(s1model3sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model3sum$coeff[3,1] - 1.96 * s1model3sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model3sum$coeff[3,1] + 1.96 * s1model3sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model3sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model3sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model3sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model3sum$coeff[4,1] - 1.96 * s1model3sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model3sum$coeff[4,1] + 1.96 * s1model3sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model3sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model3sum$coeff[4,3]),196)), 3), nsmall=3)` | `r format(round(s1model3RSq['R2m'], 3), nsmall=3)` | `r format(round(s1model3RSq['R2c'], 3), nsmall=3)`
+Anger | `r format(round(s1model4sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model4sum$coeff[3,1] - 1.96 * s1model4sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model4sum$coeff[3,1] + 1.96 * s1model4sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model4sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model4sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model4sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model4sum$coeff[4,1] - 1.96 * s1model4sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model4sum$coeff[4,1] + 1.96 * s1model4sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model4sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model4sum$coeff[4,3]),196)), 3), nsmall=3)` | `r format(round(s1model4RSq['R2m'], 3), nsmall=3)` | `r format(round(s1model4RSq['R2c'], 3), nsmall=3)`
+Disgust | `r format(round(s1model5sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model5sum$coeff[3,1] - 1.96 * s1model5sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model5sum$coeff[3,1] + 1.96 * s1model5sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model5sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model5sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model5sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model5sum$coeff[4,1] - 1.96 * s1model5sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model5sum$coeff[4,1] + 1.96 * s1model5sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model5sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model5sum$coeff[4,3]),196)), 3), nsmall=3)` | `r format(round(s1model5RSq['R2m'], 3), nsmall=3)` | `r format(round(s1model5RSq['R2c'], 3), nsmall=3)`
+Disappointment | `r format(round(s1model6sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model6sum$coeff[3,1] - 1.96 * s1model6sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model6sum$coeff[3,1] + 1.96 * s1model6sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model6sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model6sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model6sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model6sum$coeff[4,1] - 1.96 * s1model6sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model6sum$coeff[4,1] + 1.96 * s1model6sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model6sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model6sum$coeff[4,3]),196)), 3), nsmall=3)` | `r format(round(s1model6RSq['R2m'], 3), nsmall=3)` | `r format(round(s1model6RSq['R2c'], 3), nsmall=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; 
+Negative Composite | `r format(round(s1model10sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model10sum$coeff[3,1] - 1.96 * s1model10sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model10sum$coeff[3,1] + 1.96 * s1model10sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model10sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model10sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model10sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model10sum$coeff[4,1] - 1.96 * s1model10sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model10sum$coeff[4,1] + 1.96 * s1model10sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model10sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model10sum$coeff[4,3]),196)), 3), nsmall=3)` | `r format(round(s1model10RSq['R2m'], 3), nsmall=3)` | `r format(round(s1model10RSq['R2c'], 3), nsmall=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; |  &nbsp; | &nbsp; 
+Surprise | `r format(round(s1model7sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model7sum$coeff[3,1] - 1.96 * s1model7sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model7sum$coeff[3,1] + 1.96 * s1model7sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model7sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model7sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model7sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model7sum$coeff[4,1] - 1.96 * s1model7sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model7sum$coeff[4,1] + 1.96 * s1model7sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model7sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model7sum$coeff[4,3]),196)), 3), nsmall=3)` | `r format(round(s1model7RSq['R2m'], 3), nsmall=3)` | `r format(round(s1model7RSq['R2c'], 3), nsmall=3)`
+Fear | `r format(round(s1model8sum$coeff[3,1], 3), nsmall=3)` [`r format(round(s1model8sum$coeff[3,1] - 1.96 * s1model8sum$coeff[3,2], 3), nsmall=3)`, `r format(round(s1model8sum$coeff[3,1] + 1.96 * s1model8sum$coeff[3,2], 3), nsmall=3)`]  |  `r format(round(s1model8sum$coeff[3,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model8sum$coeff[3,3]),196)), 3), nsmall=3)` | `r format(round(s1model8sum$coeff[4,1], 3), nsmall=3)` [`r format(round(s1model8sum$coeff[4,1] - 1.96 * s1model8sum$coeff[4,2], 3), nsmall=3)`, `r format(round(s1model8sum$coeff[4,1] + 1.96 * s1model8sum$coeff[4,2], 3), nsmall=3)`]  |  `r format(round(s1model8sum$coeff[4,3], 3), nsmall=3)`  |  `r format(round(2*(1-pt(abs(s1model8sum$coeff[4,3]),196)), 3), nsmall=3)` | `r format(round(s1model8RSq['R2m'], 3), nsmall=3)` | `r format(round(s1model8RSq['R2c'], 3), nsmall=3)`
 
 Top: Table 1 in paper. <br>
-Study 1 results. Each row indicates the results of one model predicting one emotion (or emotion composite). Left: Coefficients on the simple effect of condition (i.e. the contrast Other-Self at PE=0) in the mixed models. Right: Reward sensitivity, or the coefficient on the Condition*PE interaction term in the mixed models. (n.s. not significant, * p<.05, ** p<.01, *** p<.001)
+Study 1 results. Each row indicates the results of one model predicting one emotion (or emotion composite). Left: Coefficients on the simple effect of condition (i.e. the contrast Other-Self at PE=0) in the mixed models. Right: Reward sensitivity, or the coefficient on the Condition*PE interaction term in the mixed models. (n.s. not significant, * p<.05, ** p<.01, *** p<.001) Marginal and Conditional R^2 are reported, after Nakagawa and Schielzeth (2013) 
 
 
 
@@ -315,7 +340,7 @@ ggplot(data=study1DF, aes(x=Emotion, y=coef, fill=Emotion)) +
 # 8.5 by 6
 ```
 
-Top (not in paper): Graph of coefficients of individual emotions for Study 1. (Basically a graphical representation of the coefficients in Table 1). Error bars represent 95% CIs
+Top (not in paper): Graph of coefficients of individual emotions for Study 1. (Basically a graphical representation of the coefficients in Table 1). Error bars represent 95% CIs.
 
 
 
@@ -356,7 +381,7 @@ ggplot(data=study1DF_collapsed, aes(x=Emotion, y=Coef, fill=Emotion)) +
 # pdf 6.5 by 4
 ```
 
-Top (not in paper): Similar graph, but only for the positive/engative emotion composites.
+Top (not in paper): Similar graph, but only for the positive/engative emotion composites. Error bars are 95% CIs.
 
 
 # Study 2
@@ -501,9 +526,18 @@ s2model7sum=summary(socDistanceModel7)
 s2model8sum=summary(socDistanceModel8)
 
 
+s2model1RSq = r.squaredGLMM(socDistanceModel1)
+s2model2RSq = r.squaredGLMM(socDistanceModel2)
+s2model3RSq = r.squaredGLMM(socDistanceModel3)
+s2model4RSq = r.squaredGLMM(socDistanceModel4)
+s2model5RSq = r.squaredGLMM(socDistanceModel5)
+s2model6RSq = r.squaredGLMM(socDistanceModel6)
+s2model7RSq = r.squaredGLMM(socDistanceModel7)
+s2model8RSq = r.squaredGLMM(socDistanceModel8)
+
+
 socDistanceModel9 <- lmer(positive  ~ PE * socialDistance + (1|workerid) + (1|spinnerID), data = study2); 
 socDistanceModel10 <- lmer(negative ~ PE * socialDistance + (1|workerid) + (1|spinnerID), data = study2); 
-
 
 s2model9sum=summary(socDistanceModel9)
 s2model10sum=summary(socDistanceModel10)
@@ -519,6 +553,8 @@ s2model10sum$coeff[4,1] + 1.96 * s2model10sum$coeff[4,2]
 s2model10sum$coeff[4,3]
 2*(1-pt(abs(s2model10sum$coeff[4,3]),232))
 
+s2model9RSq = r.squaredGLMM(socDistanceModel9)
+s2model10RSq = r.squaredGLMM(socDistanceModel10)
 
 
 #study2$openness = 1-1*(study2$BFI.5) + 1*(study2$BFI.10)
@@ -541,24 +577,24 @@ s2model10sum$coeff[4,3]
 
 #### Study 2 Regression Results
 
-Emotion | <u>Simple Effect</u> <br> b [95\% CI] | <br> t | <br> p | <u>Reward Sensitivity (Interaction)</u> <br> b [95\% CI] | <br> t | <br> p
---- | --- | --- | --- | --- | --- | --- 
-Happy | `r format(round(s2model1sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model1sum$coeff[3,1] - 1.96 * s2model1sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model1sum$coeff[3,1] + 1.96 * s2model1sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model1sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model1sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model1sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model1sum$coeff[4,1] - 1.96 * s2model1sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model1sum$coeff[4,1] + 1.96 * s2model1sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model1sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model1sum$coeff[4,3]),196)), 3), digits=3)`
-Content | `r format(round(s2model2sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model2sum$coeff[3,1] - 1.96 * s2model2sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model2sum$coeff[3,1] + 1.96 * s2model2sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model2sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model2sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model2sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model2sum$coeff[4,1] - 1.96 * s2model2sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model2sum$coeff[4,1] + 1.96 * s2model2sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model2sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model2sum$coeff[4,3]),196)), 3), digits=3)`
-&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
-Positive Composite | `r format(round(s2model9sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model9sum$coeff[3,1] - 1.96 * s2model9sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model9sum$coeff[3,1] + 1.96 * s2model9sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model9sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model9sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model9sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model9sum$coeff[4,1] - 1.96 * s2model9sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model9sum$coeff[4,1] + 1.96 * s2model9sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model9sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model9sum$coeff[4,3]),196)), 3), digits=3)`
-&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
-&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
-Sad | `r format(round(s2model3sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model3sum$coeff[3,1] - 1.96 * s2model3sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model3sum$coeff[3,1] + 1.96 * s2model3sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model3sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model3sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model3sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model3sum$coeff[4,1] - 1.96 * s2model3sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model3sum$coeff[4,1] + 1.96 * s2model3sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model3sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model3sum$coeff[4,3]),196)), 3), digits=3)`
-Anger | `r format(round(s2model4sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model4sum$coeff[3,1] - 1.96 * s2model4sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model4sum$coeff[3,1] + 1.96 * s2model4sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model4sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model4sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model4sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model4sum$coeff[4,1] - 1.96 * s2model4sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model4sum$coeff[4,1] + 1.96 * s2model4sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model4sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model4sum$coeff[4,3]),196)), 3), digits=3)`
-Disgust | `r format(round(s2model5sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model5sum$coeff[3,1] - 1.96 * s2model5sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model5sum$coeff[3,1] + 1.96 * s2model5sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model5sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model5sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model5sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model5sum$coeff[4,1] - 1.96 * s2model5sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model5sum$coeff[4,1] + 1.96 * s2model5sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model5sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model5sum$coeff[4,3]),196)), 3), digits=3)`
-Disappointment | `r format(round(s2model6sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model6sum$coeff[3,1] - 1.96 * s2model6sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model6sum$coeff[3,1] + 1.96 * s2model6sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model6sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model6sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model6sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model6sum$coeff[4,1] - 1.96 * s2model6sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model6sum$coeff[4,1] + 1.96 * s2model6sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model6sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model6sum$coeff[4,3]),196)), 3), digits=3)`
-&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
-Negative Composite | `r format(round(s2model10sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model10sum$coeff[3,1] - 1.96 * s2model10sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model10sum$coeff[3,1] + 1.96 * s2model10sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model10sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model10sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model10sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model10sum$coeff[4,1] - 1.96 * s2model10sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model10sum$coeff[4,1] + 1.96 * s2model10sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model10sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model10sum$coeff[4,3]),196)), 3), digits=3)`
-&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
-&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
-Surprise | `r format(round(s2model7sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model7sum$coeff[3,1] - 1.96 * s2model7sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model7sum$coeff[3,1] + 1.96 * s2model7sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model7sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model7sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model7sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model7sum$coeff[4,1] - 1.96 * s2model7sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model7sum$coeff[4,1] + 1.96 * s2model7sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model7sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model7sum$coeff[4,3]),196)), 3), digits=3)`
-Fear | `r format(round(s2model8sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model8sum$coeff[3,1] - 1.96 * s2model8sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model8sum$coeff[3,1] + 1.96 * s2model8sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model8sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model8sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model8sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model8sum$coeff[4,1] - 1.96 * s2model8sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model8sum$coeff[4,1] + 1.96 * s2model8sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model8sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model8sum$coeff[4,3]),196)), 3), digits=3)`
+Emotion | <u>Simple Effect</u> <br> b [95\% CI] | <br> t | <br> p | <u>Reward Sensitivity (Interaction)</u> <br> b [95\% CI] | <br> t | <br> p | marginal R^2 | conditional R^2
+--- | --- | --- | --- | --- | --- | --- | --- | --- 
+Happy | `r format(round(s2model1sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model1sum$coeff[3,1] - 1.96 * s2model1sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model1sum$coeff[3,1] + 1.96 * s2model1sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model1sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model1sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model1sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model1sum$coeff[4,1] - 1.96 * s2model1sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model1sum$coeff[4,1] + 1.96 * s2model1sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model1sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model1sum$coeff[4,3]),196)), 3), digits=3)` | `r format(round(s2model1RSq['R2m'], 3), nsmall=3)` | `r format(round(s2model1RSq['R2c'], 3), nsmall=3)`
+Content | `r format(round(s2model2sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model2sum$coeff[3,1] - 1.96 * s2model2sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model2sum$coeff[3,1] + 1.96 * s2model2sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model2sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model2sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model2sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model2sum$coeff[4,1] - 1.96 * s2model2sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model2sum$coeff[4,1] + 1.96 * s2model2sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model2sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model2sum$coeff[4,3]),196)), 3), digits=3)`  | `r format(round(s2model2RSq['R2m'], 3), nsmall=3)` | `r format(round(s2model2RSq['R2c'], 3), nsmall=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+Positive Composite | `r format(round(s2model9sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model9sum$coeff[3,1] - 1.96 * s2model9sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model9sum$coeff[3,1] + 1.96 * s2model9sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model9sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model9sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model9sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model9sum$coeff[4,1] - 1.96 * s2model9sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model9sum$coeff[4,1] + 1.96 * s2model9sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model9sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model9sum$coeff[4,3]),196)), 3), digits=3)`  | `r format(round(s2model9RSq['R2m'], 3), nsmall=3)` | `r format(round(s2model9RSq['R2c'], 3), nsmall=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+Sad | `r format(round(s2model3sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model3sum$coeff[3,1] - 1.96 * s2model3sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model3sum$coeff[3,1] + 1.96 * s2model3sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model3sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model3sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model3sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model3sum$coeff[4,1] - 1.96 * s2model3sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model3sum$coeff[4,1] + 1.96 * s2model3sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model3sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model3sum$coeff[4,3]),196)), 3), digits=3)`  | `r format(round(s2model3RSq['R2m'], 3), nsmall=3)` | `r format(round(s2model3RSq['R2c'], 3), nsmall=3)`
+Anger | `r format(round(s2model4sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model4sum$coeff[3,1] - 1.96 * s2model4sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model4sum$coeff[3,1] + 1.96 * s2model4sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model4sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model4sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model4sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model4sum$coeff[4,1] - 1.96 * s2model4sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model4sum$coeff[4,1] + 1.96 * s2model4sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model4sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model4sum$coeff[4,3]),196)), 3), digits=3)`  | `r format(round(s2model4RSq['R2m'], 3), nsmall=3)` | `r format(round(s2model4RSq['R2c'], 3), nsmall=3)`
+Disgust | `r format(round(s2model5sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model5sum$coeff[3,1] - 1.96 * s2model5sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model5sum$coeff[3,1] + 1.96 * s2model5sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model5sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model5sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model5sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model5sum$coeff[4,1] - 1.96 * s2model5sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model5sum$coeff[4,1] + 1.96 * s2model5sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model5sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model5sum$coeff[4,3]),196)), 3), digits=3)`  | `r format(round(s2model5RSq['R2m'], 3), nsmall=3)` | `r format(round(s2model5RSq['R2c'], 3), nsmall=3)`
+Disappointment | `r format(round(s2model6sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model6sum$coeff[3,1] - 1.96 * s2model6sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model6sum$coeff[3,1] + 1.96 * s2model6sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model6sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model6sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model6sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model6sum$coeff[4,1] - 1.96 * s2model6sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model6sum$coeff[4,1] + 1.96 * s2model6sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model6sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model6sum$coeff[4,3]),196)), 3), digits=3)`  | `r format(round(s2model6RSq['R2m'], 3), nsmall=3)` | `r format(round(s2model6RSq['R2c'], 3), nsmall=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+Negative Composite | `r format(round(s2model10sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model10sum$coeff[3,1] - 1.96 * s2model10sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model10sum$coeff[3,1] + 1.96 * s2model10sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model10sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model10sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model10sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model10sum$coeff[4,1] - 1.96 * s2model10sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model10sum$coeff[4,1] + 1.96 * s2model10sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model10sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model10sum$coeff[4,3]),196)), 3), digits=3)`  | `r format(round(s2model10RSq['R2m'], 3), nsmall=3)` | `r format(round(s2model10RSq['R2c'], 3), nsmall=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+Surprise | `r format(round(s2model7sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model7sum$coeff[3,1] - 1.96 * s2model7sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model7sum$coeff[3,1] + 1.96 * s2model7sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model7sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model7sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model7sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model7sum$coeff[4,1] - 1.96 * s2model7sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model7sum$coeff[4,1] + 1.96 * s2model7sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model7sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model7sum$coeff[4,3]),196)), 3), digits=3)`  | `r format(round(s2model7RSq['R2m'], 3), nsmall=3)` | `r format(round(s2model7RSq['R2c'], 3), nsmall=3)`
+Fear | `r format(round(s2model8sum$coeff[3,1], 3), digits=3)` [`r format(round(s2model8sum$coeff[3,1] - 1.96 * s2model8sum$coeff[3,2], 3), digits=3)`, `r format(round(s2model8sum$coeff[3,1] + 1.96 * s2model8sum$coeff[3,2], 3), digits=3)`] | `r format(round(s2model8sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model8sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s2model8sum$coeff[4,1], 3), digits=3)` [`r format(round(s2model8sum$coeff[4,1] - 1.96 * s2model8sum$coeff[4,2], 3), digits=3)`, `r format(round(s2model8sum$coeff[4,1] + 1.96 * s2model8sum$coeff[4,2], 3), digits=3)`] | `r format(round(s2model8sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s2model8sum$coeff[4,3]),196)), 3), digits=3)`  | `r format(round(s2model8RSq['R2m'], 3), nsmall=3)` | `r format(round(s2model8RSq['R2c'], 3), nsmall=3)`
 
 
 
@@ -701,33 +737,57 @@ study3$negative = (study3$sad + study3$anger + study3$disgust + study3$disapp)/4
 
 ```{r study3-analysis, echo=FALSE, results='hide'}
 # want "self-now" to be the base condition, so use "thirdPerson" and "prospective" as the dummy variables.
-mod1sum = summary(lmer(happy    ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3))
-mod2sum = summary(lmer(content  ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)) 
+s3model1 = lmer(happy    ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)
+s3model2 = lmer(content  ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)
+s3model3 = lmer(sad      ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)
+s3model4 = lmer(anger    ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)
+s3model5 = lmer(disgust  ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)
+s3model6 = lmer(disapp   ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)
+s3model7 = lmer(surprise ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)
+s3model8 = lmer(fear     ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)
 
-mod3sum = summary(lmer(sad      ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)) 
-mod4sum = summary(lmer(anger    ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)) 
-mod5sum = summary(lmer(disgust  ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)) 
-mod6sum = summary(lmer(disapp   ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3))
+s3model9 = lmer(positive     ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)
+s3model10 = lmer(negative     ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)
 
-mod7sum = summary(lmer(surprise ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3))
-mod8sum = summary(lmer(fear     ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)) 
+  
+s3model1sum = summary(s3model1)
+s3model2sum = summary(s3model2)
+s3model3sum = summary(s3model3)
+s3model4sum = summary(s3model4)
+s3model5sum = summary(s3model5)
+s3model6sum = summary(s3model6)
+s3model7sum = summary(s3model7)
+s3model8sum = summary(s3model8)
 
-mod9sum = summary(lmer(positive     ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)) 
-mod10sum = summary(lmer(negative     ~ PE*thirdPerson*prospective + (1|workerid) + (1|spinnerID), data = study3)) 
+s3model9sum = summary(s3model9) 
+s3model10sum = summary(s3model10) 
+
+s3model1RSq = r.squaredGLMM(s3model1)
+s3model2RSq = r.squaredGLMM(s3model2)
+s3model3RSq = r.squaredGLMM(s3model3)
+s3model4RSq = r.squaredGLMM(s3model4)
+s3model5RSq = r.squaredGLMM(s3model5)
+s3model6RSq = r.squaredGLMM(s3model6)
+s3model7RSq = r.squaredGLMM(s3model7)
+s3model8RSq = r.squaredGLMM(s3model8)
+
+s3model9RSq = r.squaredGLMM(s3model9)
+s3model10RSq = r.squaredGLMM(s3model10)
+
 
 # currentValue = 5
-# mod9sum$coefficients[currentValue,1]
-# mod9sum$coefficients[currentValue,1] - 1.96 * mod9sum$coefficients[currentValue,2]
-# mod9sum$coefficients[currentValue,1] + 1.96 * mod9sum$coefficients[currentValue,2]
-# mod9sum$coefficients[currentValue,3]
-# 2*(1-pt(abs(mod9sum$coefficients[currentValue,3]),378))
+# s3model9sum$coefficients[currentValue,1]
+# s3model9sum$coefficients[currentValue,1] - 1.96 * s3model9sum$coefficients[currentValue,2]
+# s3model9sum$coefficients[currentValue,1] + 1.96 * s3model9sum$coefficients[currentValue,2]
+# s3model9sum$coefficients[currentValue,3]
+# 2*(1-pt(abs(s3model9sum$coefficients[currentValue,3]),378))
 # 
 # #currentValue = 4
-# mod10sum$coefficients[currentValue,1]
-# mod10sum$coefficients[currentValue,1] - 1.96 * mod10sum$coefficients[currentValue,2]
-# mod10sum$coefficients[currentValue,1] + 1.96 * mod10sum$coefficients[currentValue,2]
-# mod10sum$coefficients[currentValue,3]
-# 2*(1-pt(abs(mod10sum$coefficients[currentValue,3]),378))
+# s3model10sum$coefficients[currentValue,1]
+# s3model10sum$coefficients[currentValue,1] - 1.96 * s3model10sum$coefficients[currentValue,2]
+# s3model10sum$coefficients[currentValue,1] + 1.96 * s3model10sum$coefficients[currentValue,2]
+# s3model10sum$coefficients[currentValue,3]
+# 2*(1-pt(abs(s3model10sum$coefficients[currentValue,3]),378))
 ```
 
 
@@ -745,70 +805,70 @@ study3PlotDF = data.frame(Emotion = factor(rep(c(rep("Happy",1), rep("Content",1
                                                    "Condition simple effect (at PE=0)"),each=16),
                                            levels=c("Condition simple effect (at PE=0)", 
                                                     "Condition Interaction with PE")),
-                         Coef = c(mod1sum$coefficients[5,1],
-                                  mod2sum$coefficients[5,1],
-                                  mod3sum$coefficients[5,1],
-                                  mod4sum$coefficients[5,1],
-                                  mod5sum$coefficients[5,1],
-                                  mod6sum$coefficients[5,1],
-                                  mod7sum$coefficients[5,1],
-                                  mod8sum$coefficients[5,1],
-                                  mod1sum$coefficients[6,1],
-                                  mod2sum$coefficients[6,1],
-                                  mod3sum$coefficients[6,1],
-                                  mod4sum$coefficients[6,1],
-                                  mod5sum$coefficients[6,1],
-                                  mod6sum$coefficients[6,1],
-                                  mod7sum$coefficients[6,1],
-                                  mod8sum$coefficients[6,1],
-                                  mod1sum$coefficients[3,1],
-                                  mod2sum$coefficients[3,1],
-                                  mod3sum$coefficients[3,1],
-                                  mod4sum$coefficients[3,1],
-                                  mod5sum$coefficients[3,1],
-                                  mod6sum$coefficients[3,1],
-                                  mod7sum$coefficients[3,1],
-                                  mod8sum$coefficients[3,1],
-                                  mod1sum$coefficients[4,1],
-                                  mod2sum$coefficients[4,1],
-                                  mod3sum$coefficients[4,1],
-                                  mod4sum$coefficients[4,1],
-                                  mod5sum$coefficients[4,1],
-                                  mod6sum$coefficients[4,1],
-                                  mod7sum$coefficients[4,1],
-                                  mod8sum$coefficients[4,1]),
-                         SE = c(mod1sum$coefficients[5,2],
-                                mod2sum$coefficients[5,2],
-                                mod3sum$coefficients[5,2],
-                                mod4sum$coefficients[5,2],
-                                mod5sum$coefficients[5,2],
-                                mod6sum$coefficients[5,2],
-                                mod7sum$coefficients[5,2],
-                                mod8sum$coefficients[5,2],
-                                mod1sum$coefficients[6,2],
-                                mod2sum$coefficients[6,2],
-                                mod3sum$coefficients[6,2],
-                                mod4sum$coefficients[6,2],
-                                mod5sum$coefficients[6,2],
-                                mod6sum$coefficients[6,2],
-                                mod7sum$coefficients[6,2],
-                                mod8sum$coefficients[6,2],
-                                mod1sum$coefficients[3,2],
-                                mod2sum$coefficients[3,2],
-                                mod3sum$coefficients[3,2],
-                                mod4sum$coefficients[3,2],
-                                mod5sum$coefficients[3,2],
-                                mod6sum$coefficients[3,2],
-                                mod7sum$coefficients[3,2],
-                                mod8sum$coefficients[3,2],
-                                mod1sum$coefficients[4,2],
-                                mod2sum$coefficients[4,2],
-                                mod3sum$coefficients[4,2],
-                                mod4sum$coefficients[4,2],
-                                mod5sum$coefficients[4,2],
-                                mod6sum$coefficients[4,2],
-                                mod7sum$coefficients[4,2],
-                                mod8sum$coefficients[4,2])
+                         Coef = c(s3model1sum$coefficients[5,1],
+                                  s3model2sum$coefficients[5,1],
+                                  s3model3sum$coefficients[5,1],
+                                  s3model4sum$coefficients[5,1],
+                                  s3model5sum$coefficients[5,1],
+                                  s3model6sum$coefficients[5,1],
+                                  s3model7sum$coefficients[5,1],
+                                  s3model8sum$coefficients[5,1],
+                                  s3model1sum$coefficients[6,1],
+                                  s3model2sum$coefficients[6,1],
+                                  s3model3sum$coefficients[6,1],
+                                  s3model4sum$coefficients[6,1],
+                                  s3model5sum$coefficients[6,1],
+                                  s3model6sum$coefficients[6,1],
+                                  s3model7sum$coefficients[6,1],
+                                  s3model8sum$coefficients[6,1],
+                                  s3model1sum$coefficients[3,1],
+                                  s3model2sum$coefficients[3,1],
+                                  s3model3sum$coefficients[3,1],
+                                  s3model4sum$coefficients[3,1],
+                                  s3model5sum$coefficients[3,1],
+                                  s3model6sum$coefficients[3,1],
+                                  s3model7sum$coefficients[3,1],
+                                  s3model8sum$coefficients[3,1],
+                                  s3model1sum$coefficients[4,1],
+                                  s3model2sum$coefficients[4,1],
+                                  s3model3sum$coefficients[4,1],
+                                  s3model4sum$coefficients[4,1],
+                                  s3model5sum$coefficients[4,1],
+                                  s3model6sum$coefficients[4,1],
+                                  s3model7sum$coefficients[4,1],
+                                  s3model8sum$coefficients[4,1]),
+                         SE = c(s3model1sum$coefficients[5,2],
+                                s3model2sum$coefficients[5,2],
+                                s3model3sum$coefficients[5,2],
+                                s3model4sum$coefficients[5,2],
+                                s3model5sum$coefficients[5,2],
+                                s3model6sum$coefficients[5,2],
+                                s3model7sum$coefficients[5,2],
+                                s3model8sum$coefficients[5,2],
+                                s3model1sum$coefficients[6,2],
+                                s3model2sum$coefficients[6,2],
+                                s3model3sum$coefficients[6,2],
+                                s3model4sum$coefficients[6,2],
+                                s3model5sum$coefficients[6,2],
+                                s3model6sum$coefficients[6,2],
+                                s3model7sum$coefficients[6,2],
+                                s3model8sum$coefficients[6,2],
+                                s3model1sum$coefficients[3,2],
+                                s3model2sum$coefficients[3,2],
+                                s3model3sum$coefficients[3,2],
+                                s3model4sum$coefficients[3,2],
+                                s3model5sum$coefficients[3,2],
+                                s3model6sum$coefficients[3,2],
+                                s3model7sum$coefficients[3,2],
+                                s3model8sum$coefficients[3,2],
+                                s3model1sum$coefficients[4,2],
+                                s3model2sum$coefficients[4,2],
+                                s3model3sum$coefficients[4,2],
+                                s3model4sum$coefficients[4,2],
+                                s3model5sum$coefficients[4,2],
+                                s3model6sum$coefficients[4,2],
+                                s3model7sum$coefficients[4,2],
+                                s3model8sum$coefficients[4,2])
                          )
 
 study3PlotDF$CI = 1.96*study3PlotDF$SE
@@ -846,22 +906,22 @@ study3PlotDF_collapsed = data.frame(Emotion = factor(rep(c(rep("Positive",1), re
                                                    "Condition simple effect (at PE=0)"), each=4),
                                            levels=c("Condition simple effect (at PE=0)", 
                                                     "Condition Interaction with PE")),
-                         Coef = c(mod9sum$coefficients[5,1],
-                                  mod10sum$coefficients[5,1],
-                                  mod9sum$coefficients[6,1],
-                                  mod10sum$coefficients[6,1],
-                                  mod9sum$coefficients[3,1],
-                                  mod10sum$coefficients[3,1],
-                                  mod9sum$coefficients[4,1],
-                                  mod10sum$coefficients[4,1]),
-                         SE = c(mod9sum$coefficients[5,2],
-                                mod10sum$coefficients[5,2],
-                                mod9sum$coefficients[6,2],
-                                mod10sum$coefficients[6,2],
-                                mod9sum$coefficients[3,2],
-                                mod10sum$coefficients[3,2],
-                                mod9sum$coefficients[4,2],
-                                mod10sum$coefficients[4,2])
+                         Coef = c(s3model9sum$coefficients[5,1],
+                                  s3model10sum$coefficients[5,1],
+                                  s3model9sum$coefficients[6,1],
+                                  s3model10sum$coefficients[6,1],
+                                  s3model9sum$coefficients[3,1],
+                                  s3model10sum$coefficients[3,1],
+                                  s3model9sum$coefficients[4,1],
+                                  s3model10sum$coefficients[4,1]),
+                         SE = c(s3model9sum$coefficients[5,2],
+                                s3model10sum$coefficients[5,2],
+                                s3model9sum$coefficients[6,2],
+                                s3model10sum$coefficients[6,2],
+                                s3model9sum$coefficients[3,2],
+                                s3model10sum$coefficients[3,2],
+                                s3model9sum$coefficients[4,2],
+                                s3model10sum$coefficients[4,2])
                          )
 study3PlotDF_collapsed$CI = 1.96*study3PlotDF_collapsed$SE
 
@@ -895,103 +955,155 @@ Top (Figure 5 in paper): <br>
 Study 3 results: Left: Simple effect by distance (i.e., the effect of the distance manipulations at PE=0). Right: Reward sensitivity across psychological distance (i.e., the interactions of the two distance manipulations with PE). Error bars represent 95% Confidence Intervals. 
 
 
+
+
+
+
+
+
+Emotion | <u>Three way interaction</u> <br> b [95\% CI] | <br> t | <br> p | marginal R^2 | conditional R^2
+--- | --- | --- | --- | --- | ---
+Happy | `r format(round(s3model1sum$coeff[8,1], 3), digits=3)` [`r format(round(s3model1sum$coeff[8,1] - 1.96 * s3model1sum$coeff[8,2], 3), digits=3)`, `r format(round(s3model1sum$coeff[8,1] + 1.96 * s3model1sum$coeff[8,2], 3), digits=3)`] | `r format(round(s3model1sum$coeff[8,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model1sum$coeff[8,3]),196)), 3), digits=3)` | `r format(round(s3model1RSq['R2m'], 3), nsmall=3)` | `r format(round(s3model1RSq['R2c'], 3), nsmall=3)`
+Content | `r format(round(s3model2sum$coeff[8,1], 3), digits=3)` [`r format(round(s3model2sum$coeff[8,1] - 1.96 * s3model2sum$coeff[8,2], 3), digits=3)`, `r format(round(s3model2sum$coeff[8,1] + 1.96 * s3model2sum$coeff[8,2], 3), digits=3)`] | `r format(round(s3model2sum$coeff[8,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model2sum$coeff[8,3]),196)), 3), digits=3)` | `r format(round(s3model2RSq['R2m'], 3), nsmall=3)` | `r format(round(s3model2RSq['R2c'], 3), nsmall=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+Positive Composite | `r format(round(s3model9sum$coeff[8,1], 3), digits=3)` [`r format(round(s3model9sum$coeff[8,1] - 1.96 * s3model9sum$coeff[8,2], 3), digits=3)`, `r format(round(s3model9sum$coeff[8,1] + 1.96 * s3model9sum$coeff[8,2], 3), digits=3)`] | `r format(round(s3model9sum$coeff[8,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model9sum$coeff[8,3]),196)), 3), digits=3)` | `r format(round(s3model9RSq['R2m'], 3), nsmall=3)` | `r format(round(s3model9RSq['R2c'], 3), nsmall=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+Sad | `r format(round(s3model3sum$coeff[8,1], 3), digits=3)` [`r format(round(s3model3sum$coeff[8,1] - 1.96 * s3model3sum$coeff[8,2], 3), digits=3)`, `r format(round(s3model3sum$coeff[8,1] + 1.96 * s3model3sum$coeff[8,2], 3), digits=3)`] | `r format(round(s3model3sum$coeff[8,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model3sum$coeff[8,3]),196)), 3), digits=3)` | `r format(round(s3model3RSq['R2m'], 3), nsmall=3)` | `r format(round(s3model3RSq['R2c'], 3), nsmall=3)`
+Anger | `r format(round(s3model4sum$coeff[8,1], 3), digits=3)` [`r format(round(s3model4sum$coeff[8,1] - 1.96 * s3model4sum$coeff[8,2], 3), digits=3)`, `r format(round(s3model4sum$coeff[8,1] + 1.96 * s3model4sum$coeff[8,2], 3), digits=3)`] | `r format(round(s3model4sum$coeff[8,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model4sum$coeff[8,3]),196)), 3), digits=3)` | `r format(round(s3model4RSq['R2m'], 3), nsmall=3)` | `r format(round(s3model4RSq['R2c'], 3), nsmall=3)`
+Disgust | `r format(round(s3model5sum$coeff[8,1], 3), digits=3)` [`r format(round(s3model5sum$coeff[8,1] - 1.96 * s3model5sum$coeff[8,2], 3), digits=3)`, `r format(round(s3model5sum$coeff[8,1] + 1.96 * s3model5sum$coeff[8,2], 3), digits=3)`] | `r format(round(s3model5sum$coeff[8,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model5sum$coeff[8,3]),196)), 3), digits=3)` | `r format(round(s3model5RSq['R2m'], 3), nsmall=3)` | `r format(round(s3model5RSq['R2c'], 3), nsmall=3)`
+Disappointment | `r format(round(s3model6sum$coeff[8,1], 3), digits=3)` [`r format(round(s3model6sum$coeff[8,1] - 1.96 * s3model6sum$coeff[8,2], 3), digits=3)`, `r format(round(s3model6sum$coeff[8,1] + 1.96 * s3model6sum$coeff[8,2], 3), digits=3)`] | `r format(round(s3model6sum$coeff[8,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model6sum$coeff[8,3]),196)), 3), digits=3)` | `r format(round(s3model6RSq['R2m'], 3), nsmall=3)` | `r format(round(s3model6RSq['R2c'], 3), nsmall=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+Negative Composite | `r format(round(s3model10sum$coeff[8,1], 3), digits=3)` [`r format(round(s3model10sum$coeff[8,1] - 1.96 * s3model10sum$coeff[8,2], 3), digits=3)`, `r format(round(s3model10sum$coeff[8,1] + 1.96 * s3model10sum$coeff[8,2], 3), digits=3)`] | `r format(round(s3model10sum$coeff[8,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model10sum$coeff[8,3]),196)), 3), digits=3)` | `r format(round(s3model10RSq['R2m'], 3), nsmall=3)` | `r format(round(s3model10RSq['R2c'], 3), nsmall=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+Surprise | `r format(round(s3model7sum$coeff[8,1], 3), digits=3)` [`r format(round(s3model7sum$coeff[8,1] - 1.96 * s3model7sum$coeff[8,2], 3), digits=3)`, `r format(round(s3model7sum$coeff[8,1] + 1.96 * s3model7sum$coeff[8,2], 3), digits=3)`] | `r format(round(s3model7sum$coeff[8,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model7sum$coeff[8,3]),196)), 3), digits=3)` | `r format(round(s3model7RSq['R2m'], 3), nsmall=3)` | `r format(round(s3model7RSq['R2c'], 3), nsmall=3)`
+Fear | `r format(round(s3model8sum$coeff[8,1], 3), digits=3)` [`r format(round(s3model8sum$coeff[8,1] - 1.96 * s3model8sum$coeff[8,2], 3), digits=3)`, `r format(round(s3model8sum$coeff[8,1] + 1.96 * s3model8sum$coeff[8,2], 3), digits=3)`] | `r format(round(s3model8sum$coeff[8,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model8sum$coeff[8,3]),196)), 3), digits=3)` | `r format(round(s3model8RSq['R2m'], 3), nsmall=3)` | `r format(round(s3model8RSq['R2c'], 3), nsmall=3)`
+
+Top (not in paper): Additional Data on 3 way (PE x social x temporal) interaction in Study 3.
+
+## Supplemental Materials
+
+
+Emotion | <u>Simple Effect of SOCIAL DISTANCE</u> <br> b [95\% CI] | <br> t | <br> p | <u>Reward Sensitivity (Interaction)  of SOCIAL DISTANCE</u> <br> b [95\% CI] | <br> t | <br> p | <u>Simple Effect of TEMPORAL DISTANCE</u> <br> b [95\% CI] | <br> t | <br> p | <u>Reward Sensitivity (Interaction)  of TEMPORAL DISTANCE</u> <br> b [95\% CI] | <br> t | <br> p
+--- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---
+Happy | `r format(round(s3model1sum$coeff[3,1], 3), digits=3)` [`r format(round(s3model1sum$coeff[3,1] - 1.96 * s3model1sum$coeff[3,2], 3), digits=3)`, `r format(round(s3model1sum$coeff[3,1] + 1.96 * s3model1sum$coeff[3,2], 3), digits=3)`] | `r format(round(s3model1sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model1sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s3model1sum$coeff[5,1], 3), digits=3)` [`r format(round(s3model1sum$coeff[5,1] - 1.96 * s3model1sum$coeff[5,2], 3), digits=3)`, `r format(round(s3model1sum$coeff[5,1] + 1.96 * s3model1sum$coeff[5,2], 3), digits=3)`] | `r format(round(s3model1sum$coeff[5,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model1sum$coeff[5,3]),196)), 3), digits=3)` | `r format(round(s3model1sum$coeff[4,1], 3), digits=3)` [`r format(round(s3model1sum$coeff[4,1] - 1.96 * s3model1sum$coeff[4,2], 3), digits=3)`, `r format(round(s3model1sum$coeff[4,1] + 1.96 * s3model1sum$coeff[4,2], 3), digits=3)`] | `r format(round(s3model1sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model1sum$coeff[4,3]),196)), 3), digits=3)` | `r format(round(s3model1sum$coeff[6,1], 3), digits=3)` [`r format(round(s3model1sum$coeff[6,1] - 1.96 * s3model1sum$coeff[6,2], 3), digits=3)`, `r format(round(s3model1sum$coeff[6,1] + 1.96 * s3model1sum$coeff[6,2], 3), digits=3)`] | `r format(round(s3model1sum$coeff[6,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model1sum$coeff[6,3]),196)), 3), digits=3)`
+Content | `r format(round(s3model2sum$coeff[3,1], 3), digits=3)` [`r format(round(s3model2sum$coeff[3,1] - 1.96 * s3model2sum$coeff[3,2], 3), digits=3)`, `r format(round(s3model2sum$coeff[3,1] + 1.96 * s3model2sum$coeff[3,2], 3), digits=3)`] | `r format(round(s3model2sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model2sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s3model2sum$coeff[5,1], 3), digits=3)` [`r format(round(s3model2sum$coeff[5,1] - 1.96 * s3model2sum$coeff[5,2], 3), digits=3)`, `r format(round(s3model2sum$coeff[5,1] + 1.96 * s3model2sum$coeff[5,2], 3), digits=3)`] | `r format(round(s3model2sum$coeff[5,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model2sum$coeff[5,3]),196)), 3), digits=3)`  | `r format(round(s3model2sum$coeff[4,1], 3), digits=3)` [`r format(round(s3model2sum$coeff[4,1] - 1.96 * s3model2sum$coeff[4,2], 3), digits=3)`, `r format(round(s3model2sum$coeff[4,1] + 1.96 * s3model2sum$coeff[4,2], 3), digits=3)`] | `r format(round(s3model2sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model2sum$coeff[4,3]),196)), 3), digits=3)` | `r format(round(s3model2sum$coeff[6,1], 3), digits=3)` [`r format(round(s3model2sum$coeff[6,1] - 1.96 * s3model2sum$coeff[6,2], 3), digits=3)`, `r format(round(s3model2sum$coeff[6,1] + 1.96 * s3model2sum$coeff[6,2], 3), digits=3)`] | `r format(round(s3model2sum$coeff[6,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model2sum$coeff[6,3]),196)), 3), digits=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+Positive Composite | `r format(round(s3model9sum$coeff[3,1], 3), digits=3)` [`r format(round(s3model9sum$coeff[3,1] - 1.96 * s3model9sum$coeff[3,2], 3), digits=3)`, `r format(round(s3model9sum$coeff[3,1] + 1.96 * s3model9sum$coeff[3,2], 3), digits=3)`] | `r format(round(s3model9sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model9sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s3model9sum$coeff[5,1], 3), digits=3)` [`r format(round(s3model9sum$coeff[5,1] - 1.96 * s3model9sum$coeff[5,2], 3), digits=3)`, `r format(round(s3model9sum$coeff[5,1] + 1.96 * s3model9sum$coeff[5,2], 3), digits=3)`] | `r format(round(s3model9sum$coeff[5,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model9sum$coeff[5,3]),196)), 3), digits=3)`  | `r format(round(s3model9sum$coeff[4,1], 3), digits=3)` [`r format(round(s3model9sum$coeff[4,1] - 1.96 * s3model9sum$coeff[4,2], 3), digits=3)`, `r format(round(s3model9sum$coeff[4,1] + 1.96 * s3model9sum$coeff[4,2], 3), digits=3)`] | `r format(round(s3model9sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model9sum$coeff[4,3]),196)), 3), digits=3)` | `r format(round(s3model9sum$coeff[6,1], 3), digits=3)` [`r format(round(s3model9sum$coeff[6,1] - 1.96 * s3model9sum$coeff[6,2], 3), digits=3)`, `r format(round(s3model9sum$coeff[6,1] + 1.96 * s3model9sum$coeff[6,2], 3), digits=3)`] | `r format(round(s3model9sum$coeff[6,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model9sum$coeff[6,3]),196)), 3), digits=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+Sad | `r format(round(s3model3sum$coeff[3,1], 3), digits=3)` [`r format(round(s3model3sum$coeff[3,1] - 1.96 * s3model3sum$coeff[3,2], 3), digits=3)`, `r format(round(s3model3sum$coeff[3,1] + 1.96 * s3model3sum$coeff[3,2], 3), digits=3)`] | `r format(round(s3model3sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model3sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s3model3sum$coeff[5,1], 3), digits=3)` [`r format(round(s3model3sum$coeff[5,1] - 1.96 * s3model3sum$coeff[5,2], 3), digits=3)`, `r format(round(s3model3sum$coeff[5,1] + 1.96 * s3model3sum$coeff[5,2], 3), digits=3)`] | `r format(round(s3model3sum$coeff[5,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model3sum$coeff[5,3]),196)), 3), digits=3)` | `r format(round(s3model3sum$coeff[4,1], 3), digits=3)` [`r format(round(s3model3sum$coeff[4,1] - 1.96 * s3model3sum$coeff[4,2], 3), digits=3)`, `r format(round(s3model3sum$coeff[4,1] + 1.96 * s3model3sum$coeff[4,2], 3), digits=3)`] | `r format(round(s3model3sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model3sum$coeff[4,3]),196)), 3), digits=3)` | `r format(round(s3model3sum$coeff[6,1], 3), digits=3)` [`r format(round(s3model3sum$coeff[6,1] - 1.96 * s3model3sum$coeff[6,2], 3), digits=3)`, `r format(round(s3model3sum$coeff[6,1] + 1.96 * s3model3sum$coeff[6,2], 3), digits=3)`] | `r format(round(s3model3sum$coeff[6,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model3sum$coeff[6,3]),196)), 3), digits=3)`
+Anger | `r format(round(s3model4sum$coeff[3,1], 3), digits=3)` [`r format(round(s3model4sum$coeff[3,1] - 1.96 * s3model4sum$coeff[3,2], 3), digits=3)`, `r format(round(s3model4sum$coeff[3,1] + 1.96 * s3model4sum$coeff[3,2], 3), digits=3)`] | `r format(round(s3model4sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model4sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s3model4sum$coeff[5,1], 3), digits=3)` [`r format(round(s3model4sum$coeff[5,1] - 1.96 * s3model4sum$coeff[5,2], 3), digits=3)`, `r format(round(s3model4sum$coeff[5,1] + 1.96 * s3model4sum$coeff[5,2], 3), digits=3)`] | `r format(round(s3model4sum$coeff[5,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model4sum$coeff[5,3]),196)), 3), digits=3)`  | `r format(round(s3model4sum$coeff[4,1], 3), digits=3)` [`r format(round(s3model4sum$coeff[4,1] - 1.96 * s3model4sum$coeff[4,2], 3), digits=3)`, `r format(round(s3model4sum$coeff[4,1] + 1.96 * s3model4sum$coeff[4,2], 3), digits=3)`] | `r format(round(s3model4sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model4sum$coeff[4,3]),196)), 3), digits=3)` | `r format(round(s3model4sum$coeff[6,1], 3), digits=3)` [`r format(round(s3model4sum$coeff[6,1] - 1.96 * s3model4sum$coeff[6,2], 3), digits=3)`, `r format(round(s3model4sum$coeff[6,1] + 1.96 * s3model4sum$coeff[6,2], 3), digits=3)`] | `r format(round(s3model4sum$coeff[6,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model4sum$coeff[6,3]),196)), 3), digits=3)`
+Disgust | `r format(round(s3model5sum$coeff[3,1], 3), digits=3)` [`r format(round(s3model5sum$coeff[3,1] - 1.96 * s3model5sum$coeff[3,2], 3), digits=3)`, `r format(round(s3model5sum$coeff[3,1] + 1.96 * s3model5sum$coeff[3,2], 3), digits=3)`] | `r format(round(s3model5sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model5sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s3model5sum$coeff[5,1], 3), digits=3)` [`r format(round(s3model5sum$coeff[5,1] - 1.96 * s3model5sum$coeff[5,2], 3), digits=3)`, `r format(round(s3model5sum$coeff[5,1] + 1.96 * s3model5sum$coeff[5,2], 3), digits=3)`] | `r format(round(s3model5sum$coeff[5,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model5sum$coeff[5,3]),196)), 3), digits=3)` | `r format(round(s3model5sum$coeff[4,1], 3), digits=3)` [`r format(round(s3model5sum$coeff[4,1] - 1.96 * s3model5sum$coeff[4,2], 3), digits=3)`, `r format(round(s3model5sum$coeff[4,1] + 1.96 * s3model5sum$coeff[4,2], 3), digits=3)`] | `r format(round(s3model5sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model5sum$coeff[4,3]),196)), 3), digits=3)` | `r format(round(s3model5sum$coeff[6,1], 3), digits=3)` [`r format(round(s3model5sum$coeff[6,1] - 1.96 * s3model5sum$coeff[6,2], 3), digits=3)`, `r format(round(s3model5sum$coeff[6,1] + 1.96 * s3model5sum$coeff[6,2], 3), digits=3)`] | `r format(round(s3model5sum$coeff[6,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model5sum$coeff[6,3]),196)), 3), digits=3)`
+Disappointment | `r format(round(s3model6sum$coeff[3,1], 3), digits=3)` [`r format(round(s3model6sum$coeff[3,1] - 1.96 * s3model6sum$coeff[3,2], 3), digits=3)`, `r format(round(s3model6sum$coeff[3,1] + 1.96 * s3model6sum$coeff[3,2], 3), digits=3)`] | `r format(round(s3model6sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model6sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s3model6sum$coeff[5,1], 3), digits=3)` [`r format(round(s3model6sum$coeff[5,1] - 1.96 * s3model6sum$coeff[5,2], 3), digits=3)`, `r format(round(s3model6sum$coeff[5,1] + 1.96 * s3model6sum$coeff[5,2], 3), digits=3)`] | `r format(round(s3model6sum$coeff[5,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model6sum$coeff[5,3]),196)), 3), digits=3)` | `r format(round(s3model6sum$coeff[4,1], 3), digits=3)` [`r format(round(s3model6sum$coeff[4,1] - 1.96 * s3model6sum$coeff[4,2], 3), digits=3)`, `r format(round(s3model6sum$coeff[4,1] + 1.96 * s3model6sum$coeff[4,2], 3), digits=3)`] | `r format(round(s3model6sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model6sum$coeff[4,3]),196)), 3), digits=3)` | `r format(round(s3model6sum$coeff[6,1], 3), digits=3)` [`r format(round(s3model6sum$coeff[6,1] - 1.96 * s3model6sum$coeff[6,2], 3), digits=3)`, `r format(round(s3model6sum$coeff[6,1] + 1.96 * s3model6sum$coeff[6,2], 3), digits=3)`] | `r format(round(s3model6sum$coeff[6,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model6sum$coeff[6,3]),196)), 3), digits=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+Negative Composite | `r format(round(s3model10sum$coeff[3,1], 3), digits=3)` [`r format(round(s3model10sum$coeff[3,1] - 1.96 * s3model10sum$coeff[3,2], 3), digits=3)`, `r format(round(s3model10sum$coeff[3,1] + 1.96 * s3model10sum$coeff[3,2], 3), digits=3)`] | `r format(round(s3model10sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model10sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s3model10sum$coeff[5,1], 3), digits=3)` [`r format(round(s3model10sum$coeff[5,1] - 1.96 * s3model10sum$coeff[5,2], 3), digits=3)`, `r format(round(s3model10sum$coeff[5,1] + 1.96 * s3model10sum$coeff[5,2], 3), digits=3)`] | `r format(round(s3model10sum$coeff[5,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model10sum$coeff[5,3]),196)), 3), digits=3)` | `r format(round(s3model10sum$coeff[4,1], 3), digits=3)` [`r format(round(s3model10sum$coeff[4,1] - 1.96 * s3model10sum$coeff[4,2], 3), digits=3)`, `r format(round(s3model10sum$coeff[4,1] + 1.96 * s3model10sum$coeff[4,2], 3), digits=3)`] | `r format(round(s3model10sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model10sum$coeff[4,3]),196)), 3), digits=3)` | `r format(round(s3model10sum$coeff[6,1], 3), digits=3)` [`r format(round(s3model10sum$coeff[6,1] - 1.96 * s3model10sum$coeff[6,2], 3), digits=3)`, `r format(round(s3model10sum$coeff[6,1] + 1.96 * s3model10sum$coeff[6,2], 3), digits=3)`] | `r format(round(s3model10sum$coeff[6,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model10sum$coeff[6,3]),196)), 3), digits=3)`
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+&nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp;
+Surprise | `r format(round(s3model7sum$coeff[3,1], 3), digits=3)` [`r format(round(s3model7sum$coeff[3,1] - 1.96 * s3model7sum$coeff[3,2], 3), digits=3)`, `r format(round(s3model7sum$coeff[3,1] + 1.96 * s3model7sum$coeff[3,2], 3), digits=3)`] | `r format(round(s3model7sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model7sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s3model7sum$coeff[5,1], 3), digits=3)` [`r format(round(s3model7sum$coeff[5,1] - 1.96 * s3model7sum$coeff[5,2], 3), digits=3)`, `r format(round(s3model7sum$coeff[5,1] + 1.96 * s3model7sum$coeff[5,2], 3), digits=3)`] | `r format(round(s3model7sum$coeff[5,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model7sum$coeff[5,3]),196)), 3), digits=3)` | `r format(round(s3model7sum$coeff[4,1], 3), digits=3)` [`r format(round(s3model7sum$coeff[4,1] - 1.96 * s3model7sum$coeff[4,2], 3), digits=3)`, `r format(round(s3model7sum$coeff[4,1] + 1.96 * s3model7sum$coeff[4,2], 3), digits=3)`] | `r format(round(s3model7sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model7sum$coeff[4,3]),196)), 3), digits=3)` | `r format(round(s3model7sum$coeff[6,1], 3), digits=3)` [`r format(round(s3model7sum$coeff[6,1] - 1.96 * s3model7sum$coeff[6,2], 3), digits=3)`, `r format(round(s3model7sum$coeff[6,1] + 1.96 * s3model7sum$coeff[6,2], 3), digits=3)`] | `r format(round(s3model7sum$coeff[6,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model7sum$coeff[6,3]),196)), 3), digits=3)`
+Fear | `r format(round(s3model8sum$coeff[3,1], 3), digits=3)` [`r format(round(s3model8sum$coeff[3,1] - 1.96 * s3model8sum$coeff[3,2], 3), digits=3)`, `r format(round(s3model8sum$coeff[3,1] + 1.96 * s3model8sum$coeff[3,2], 3), digits=3)`] | `r format(round(s3model8sum$coeff[3,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model8sum$coeff[3,3]),196)), 3), digits=3)` | `r format(round(s3model8sum$coeff[5,1], 3), digits=3)` [`r format(round(s3model8sum$coeff[5,1] - 1.96 * s3model8sum$coeff[5,2], 3), digits=3)`, `r format(round(s3model8sum$coeff[5,1] + 1.96 * s3model8sum$coeff[5,2], 3), digits=3)`] | `r format(round(s3model8sum$coeff[5,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model8sum$coeff[5,3]),196)), 3), digits=3)` | `r format(round(s3model8sum$coeff[4,1], 3), digits=3)` [`r format(round(s3model8sum$coeff[4,1] - 1.96 * s3model8sum$coeff[4,2], 3), digits=3)`, `r format(round(s3model8sum$coeff[4,1] + 1.96 * s3model8sum$coeff[4,2], 3), digits=3)`] | `r format(round(s3model8sum$coeff[4,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model8sum$coeff[4,3]),196)), 3), digits=3)` | `r format(round(s3model8sum$coeff[6,1], 3), digits=3)` [`r format(round(s3model8sum$coeff[6,1] - 1.96 * s3model8sum$coeff[6,2], 3), digits=3)`, `r format(round(s3model8sum$coeff[6,1] + 1.96 * s3model8sum$coeff[6,2], 3), digits=3)`] | `r format(round(s3model8sum$coeff[6,3], 3), digits=3)` | `r format(round(2*(1-pt(abs(s3model8sum$coeff[6,3]),196)), 3), digits=3)`
+
+Top: Table S1 in the Supplemental Materials. Table of regression coefficients, with p-values in parentheses. We have presented the table to facilitate comparison across studies and emotions: The top half of the table contains the coefficients for the simple effect of distance (at PE=0). The bottom half of the table contains the coefficients for reward sensitivity across psychological distance (interaction of distance with PE). The contrasts are always in a direction taking the Self (Now) as a reference point; hence the coefficients should be interpreted as the effect of increasing distance. The three-way interactions for Study 3 are omitted for clarity. (\* p<.05, \*\* p<.01, \*\*\* p<.001)
+
+
+
+
+```{r old-table, eval=FALSE, echo=FALSE}
+# This contains the code that I used for a PREVIOUS, older version of the tables.
+
 ## Three Way Interactions
 ##### Interactions
-Happy (b=`r mod1sum$coeff[8,1]` [`r mod1sum$coeff[8,1] - 1.96 * mod1sum$coeff[8,2]`, `r mod1sum$coeff[8,1] + 1.96 * mod1sum$coeff[8,2]`], t(390)=`r mod1sum$coeff[8,3]` , p=`r 2*(1-pt(abs(mod1sum$coeff[8,3]),390))`)
+Happy (b=`r s3model1sum$coeff[8,1]` [`r s3model1sum$coeff[8,1] - 1.96 * s3model1sum$coeff[8,2]`, `r s3model1sum$coeff[8,1] + 1.96 * s3model1sum$coeff[8,2]`], t(390)=`r s3model1sum$coeff[8,3]` , p=`r 2*(1-pt(abs(s3model1sum$coeff[8,3]),390))`)
 
-Content (b=`r mod2sum$coeff[8,1]` [`r mod2sum$coeff[8,1] - 1.96 * mod2sum$coeff[8,2]`, `r  mod2sum$coeff[8,1] + 1.96 * mod2sum$coeff[8,2]`], t(390)=`r mod2sum$coeff[8,3]` , p=`r 2*(1-pt(abs(mod2sum$coeff[8,3]),390))`)
+Content (b=`r s3model2sum$coeff[8,1]` [`r s3model2sum$coeff[8,1] - 1.96 * s3model2sum$coeff[8,2]`, `r  s3model2sum$coeff[8,1] + 1.96 * s3model2sum$coeff[8,2]`], t(390)=`r s3model2sum$coeff[8,3]` , p=`r 2*(1-pt(abs(s3model2sum$coeff[8,3]),390))`)
 
-Sad (b=`r mod3sum$coeff[8,1]` [`r mod3sum$coeff[8,1] - 1.96 * mod3sum$coeff[8,2]`, `r mod3sum$coeff[8,1] + 1.96 * mod3sum$coeff[8,2]`], t(390)=`r mod3sum$coeff[8,3]` , p=`r 2*(1-pt(abs(mod3sum$coeff[8,3]),390))`)
+Sad (b=`r s3model3sum$coeff[8,1]` [`r s3model3sum$coeff[8,1] - 1.96 * s3model3sum$coeff[8,2]`, `r s3model3sum$coeff[8,1] + 1.96 * s3model3sum$coeff[8,2]`], t(390)=`r s3model3sum$coeff[8,3]` , p=`r 2*(1-pt(abs(s3model3sum$coeff[8,3]),390))`)
 
-Anger (b=`r mod4sum$coeff[8,1]` [`r mod4sum$coeff[8,1] - 1.96 * mod4sum$coeff[8,2]`, `r mod4sum$coeff[8,1] + 1.96 * mod4sum$coeff[8,2]`], t(390)=`r mod4sum$coeff[8,3]` , p=`r 2*(1-pt(abs(mod4sum$coeff[8,3]),390))`)
+Anger (b=`r s3model4sum$coeff[8,1]` [`r s3model4sum$coeff[8,1] - 1.96 * s3model4sum$coeff[8,2]`, `r s3model4sum$coeff[8,1] + 1.96 * s3model4sum$coeff[8,2]`], t(390)=`r s3model4sum$coeff[8,3]` , p=`r 2*(1-pt(abs(s3model4sum$coeff[8,3]),390))`)
 
-Disgust (b=`r mod5sum$coeff[8,1]` [`r mod5sum$coeff[8,1] - 1.96 * mod5sum$coeff[8,2]`, `r mod5sum$coeff[8,1] + 1.96 * mod5sum$coeff[8,2]`], t(390)=`r mod5sum$coeff[8,3]` , p=`r 2*(1-pt(abs(mod5sum$coeff[8,3]),390))`)
+Disgust (b=`r s3model5sum$coeff[8,1]` [`r s3model5sum$coeff[8,1] - 1.96 * s3model5sum$coeff[8,2]`, `r s3model5sum$coeff[8,1] + 1.96 * s3model5sum$coeff[8,2]`], t(390)=`r s3model5sum$coeff[8,3]` , p=`r 2*(1-pt(abs(s3model5sum$coeff[8,3]),390))`)
 
-Disappointment (b=`r mod6sum$coeff[8,1]` [`r mod6sum$coeff[8,1] - 1.96 * mod6sum$coeff[8,2]`, `r mod6sum$coeff[8,1] + 1.96 * mod6sum$coeff[8,2]`], t(390)=`r mod6sum$coeff[8,3]` , p=`r 2*(1-pt(abs(mod6sum$coeff[8,3]),390))`)
+Disappointment (b=`r s3model6sum$coeff[8,1]` [`r s3model6sum$coeff[8,1] - 1.96 * s3model6sum$coeff[8,2]`, `r s3model6sum$coeff[8,1] + 1.96 * s3model6sum$coeff[8,2]`], t(390)=`r s3model6sum$coeff[8,3]` , p=`r 2*(1-pt(abs(s3model6sum$coeff[8,3]),390))`)
 
-Surprise (b=`r mod7sum$coeff[8,1]` [`r mod7sum$coeff[8,1] - 1.96 * mod7sum$coeff[8,2]`, `r mod7sum$coeff[8,1] + 1.96 * mod7sum$coeff[8,2]`], t(390)=`r mod7sum$coeff[8,3]` , p=`r 2*(1-pt(abs(mod7sum$coeff[8,3]),390))`)
+Surprise (b=`r s3model7sum$coeff[8,1]` [`r s3model7sum$coeff[8,1] - 1.96 * s3model7sum$coeff[8,2]`, `r s3model7sum$coeff[8,1] + 1.96 * s3model7sum$coeff[8,2]`], t(390)=`r s3model7sum$coeff[8,3]` , p=`r 2*(1-pt(abs(s3model7sum$coeff[8,3]),390))`)
 
-Fear (b=`r mod8sum$coeff[8,1]` [`r mod8sum$coeff[8,1] - 1.96 * mod8sum$coeff[8,2]`, `r mod8sum$coeff[8,1] + 1.96 * mod8sum$coeff[8,2]`], t(390)=`r mod8sum$coeff[8,3]` , p=`r 2*(1-pt(abs(mod8sum$coeff[8,3]),390))`)
-
-
+Fear (b=`r s3model8sum$coeff[8,1]` [`r s3model8sum$coeff[8,1] - 1.96 * s3model8sum$coeff[8,2]`, `r s3model8sum$coeff[8,1] + 1.96 * s3model8sum$coeff[8,2]`], t(390)=`r s3model8sum$coeff[8,3]` , p=`r 2*(1-pt(abs(s3model8sum$coeff[8,3]),390))`)
 
 
 ## With Third Person
 ##### Interactions
-Happy (b=`r mod1sum$coeff[5,1]` [`r mod1sum$coeff[5,1] - 1.96 * mod1sum$coeff[5,2]`, `r mod1sum$coeff[5,1] + 1.96 * mod1sum$coeff[5,2]`], t(390)=`r mod1sum$coeff[5,3]` , p=`r 2*(1-pt(abs(mod1sum$coeff[5,3]),390))`)
+Happy (b=`r s3model1sum$coeff[5,1]` [`r s3model1sum$coeff[5,1] - 1.96 * s3model1sum$coeff[5,2]`, `r s3model1sum$coeff[5,1] + 1.96 * s3model1sum$coeff[5,2]`], t(390)=`r s3model1sum$coeff[5,3]` , p=`r 2*(1-pt(abs(s3model1sum$coeff[5,3]),390))`)
 
-Content (b=`r mod2sum$coeff[5,1]` [`r mod2sum$coeff[5,1] - 1.96 * mod2sum$coeff[5,2]`, `r  mod2sum$coeff[5,1] + 1.96 * mod2sum$coeff[5,2]`], t(390)=`r mod2sum$coeff[5,3]` , p=`r 2*(1-pt(abs(mod2sum$coeff[5,3]),390))`)
+Content (b=`r s3model2sum$coeff[5,1]` [`r s3model2sum$coeff[5,1] - 1.96 * s3model2sum$coeff[5,2]`, `r  s3model2sum$coeff[5,1] + 1.96 * s3model2sum$coeff[5,2]`], t(390)=`r s3model2sum$coeff[5,3]` , p=`r 2*(1-pt(abs(s3model2sum$coeff[5,3]),390))`)
 
-Sad (b=`r mod3sum$coeff[5,1]` [`r mod3sum$coeff[5,1] - 1.96 * mod3sum$coeff[5,2]`, `r mod3sum$coeff[5,1] + 1.96 * mod3sum$coeff[5,2]`], t(390)=`r mod3sum$coeff[5,3]` , p=`r 2*(1-pt(abs(mod3sum$coeff[5,3]),390))`)
+Sad (b=`r s3model3sum$coeff[5,1]` [`r s3model3sum$coeff[5,1] - 1.96 * s3model3sum$coeff[5,2]`, `r s3model3sum$coeff[5,1] + 1.96 * s3model3sum$coeff[5,2]`], t(390)=`r s3model3sum$coeff[5,3]` , p=`r 2*(1-pt(abs(s3model3sum$coeff[5,3]),390))`)
 
-Anger (b=`r mod4sum$coeff[5,1]` [`r mod4sum$coeff[5,1] - 1.96 * mod4sum$coeff[5,2]`, `r mod4sum$coeff[5,1] + 1.96 * mod4sum$coeff[5,2]`], t(390)=`r mod4sum$coeff[5,3]` , p=`r 2*(1-pt(abs(mod4sum$coeff[5,3]),390))`)
+Anger (b=`r s3model4sum$coeff[5,1]` [`r s3model4sum$coeff[5,1] - 1.96 * s3model4sum$coeff[5,2]`, `r s3model4sum$coeff[5,1] + 1.96 * s3model4sum$coeff[5,2]`], t(390)=`r s3model4sum$coeff[5,3]` , p=`r 2*(1-pt(abs(s3model4sum$coeff[5,3]),390))`)
 
-Disgust (b=`r mod5sum$coeff[5,1]` [`r mod5sum$coeff[5,1] - 1.96 * mod5sum$coeff[5,2]`, `r mod5sum$coeff[5,1] + 1.96 * mod5sum$coeff[5,2]`], t(390)=`r mod5sum$coeff[5,3]` , p=`r 2*(1-pt(abs(mod5sum$coeff[5,3]),390))`)
+Disgust (b=`r s3model5sum$coeff[5,1]` [`r s3model5sum$coeff[5,1] - 1.96 * s3model5sum$coeff[5,2]`, `r s3model5sum$coeff[5,1] + 1.96 * s3model5sum$coeff[5,2]`], t(390)=`r s3model5sum$coeff[5,3]` , p=`r 2*(1-pt(abs(s3model5sum$coeff[5,3]),390))`)
 
-Disappointment (b=`r mod6sum$coeff[5,1]` [`r mod6sum$coeff[5,1] - 1.96 * mod6sum$coeff[5,2]`, `r mod6sum$coeff[5,1] + 1.96 * mod6sum$coeff[5,2]`], t(390)=`r mod6sum$coeff[5,3]` , p=`r 2*(1-pt(abs(mod6sum$coeff[5,3]),390))`)
+Disappointment (b=`r s3model6sum$coeff[5,1]` [`r s3model6sum$coeff[5,1] - 1.96 * s3model6sum$coeff[5,2]`, `r s3model6sum$coeff[5,1] + 1.96 * s3model6sum$coeff[5,2]`], t(390)=`r s3model6sum$coeff[5,3]` , p=`r 2*(1-pt(abs(s3model6sum$coeff[5,3]),390))`)
 
-Surprise (b=`r mod7sum$coeff[5,1]` [`r mod7sum$coeff[5,1] - 1.96 * mod7sum$coeff[5,2]`, `r mod7sum$coeff[5,1] + 1.96 * mod7sum$coeff[5,2]`], t(390)=`r mod7sum$coeff[5,3]` , p=`r 2*(1-pt(abs(mod7sum$coeff[5,3]),390))`)
+Surprise (b=`r s3model7sum$coeff[5,1]` [`r s3model7sum$coeff[5,1] - 1.96 * s3model7sum$coeff[5,2]`, `r s3model7sum$coeff[5,1] + 1.96 * s3model7sum$coeff[5,2]`], t(390)=`r s3model7sum$coeff[5,3]` , p=`r 2*(1-pt(abs(s3model7sum$coeff[5,3]),390))`)
 
-Fear (b=`r mod8sum$coeff[5,1]` [`r mod8sum$coeff[5,1] - 1.96 * mod8sum$coeff[5,2]`, `r mod8sum$coeff[5,1] + 1.96 * mod8sum$coeff[5,2]`], t(390)=`r mod8sum$coeff[5,3]` , p=`r 2*(1-pt(abs(mod8sum$coeff[5,3]),390))`)
+Fear (b=`r s3model8sum$coeff[5,1]` [`r s3model8sum$coeff[5,1] - 1.96 * s3model8sum$coeff[5,2]`, `r s3model8sum$coeff[5,1] + 1.96 * s3model8sum$coeff[5,2]`], t(390)=`r s3model8sum$coeff[5,3]` , p=`r 2*(1-pt(abs(s3model8sum$coeff[5,3]),390))`)
 
 
 
 ##### Simple Effects
-Happy (b=`r mod1sum$coeff[3,1]` [`r mod1sum$coeff[3,1] - 1.96 * mod1sum$coeff[3,2]`, `r mod1sum$coeff[3,1] + 1.96 * mod1sum$coeff[3,2]`], t(390)=`r mod1sum$coeff[3,3]` , p=`r 2*(1-pt(abs(mod1sum$coeff[3,3]),390))`)
+Happy (b=`r s3model1sum$coeff[3,1]` [`r s3model1sum$coeff[3,1] - 1.96 * s3model1sum$coeff[3,2]`, `r s3model1sum$coeff[3,1] + 1.96 * s3model1sum$coeff[3,2]`], t(390)=`r s3model1sum$coeff[3,3]` , p=`r 2*(1-pt(abs(s3model1sum$coeff[3,3]),390))`)
 
-Content (b=`r mod2sum$coeff[3,1]` [`r mod2sum$coeff[3,1] - 1.96 * mod2sum$coeff[3,2]`, `r mod2sum$coeff[3,1] + 1.96 * mod2sum$coeff[3,2]`], t(390)=`r mod2sum$coeff[3,3]` , p=`r 2*(1-pt(abs(mod2sum$coeff[3,3]),390))`)
+Content (b=`r s3model2sum$coeff[3,1]` [`r s3model2sum$coeff[3,1] - 1.96 * s3model2sum$coeff[3,2]`, `r s3model2sum$coeff[3,1] + 1.96 * s3model2sum$coeff[3,2]`], t(390)=`r s3model2sum$coeff[3,3]` , p=`r 2*(1-pt(abs(s3model2sum$coeff[3,3]),390))`)
 
-Sad (b=`r mod3sum$coeff[3,1]` [`r mod3sum$coeff[3,1] - 1.96 * mod3sum$coeff[3,2]`, `r mod3sum$coeff[3,1] + 1.96 * mod3sum$coeff[3,2]`], t(390)=`r mod3sum$coeff[3,3]` , p=`r 2*(1-pt(abs(mod3sum$coeff[3,3]),390))`)
+Sad (b=`r s3model3sum$coeff[3,1]` [`r s3model3sum$coeff[3,1] - 1.96 * s3model3sum$coeff[3,2]`, `r s3model3sum$coeff[3,1] + 1.96 * s3model3sum$coeff[3,2]`], t(390)=`r s3model3sum$coeff[3,3]` , p=`r 2*(1-pt(abs(s3model3sum$coeff[3,3]),390))`)
 
-Anger (b=`r mod4sum$coeff[3,1]` [`r mod4sum$coeff[3,1] - 1.96 * mod4sum$coeff[3,2]`, `r mod4sum$coeff[3,1] + 1.96 * mod4sum$coeff[3,2]`], t(390)=`r mod4sum$coeff[3,3]` , p=`r 2*(1-pt(abs(mod4sum$coeff[3,3]),390))`)
+Anger (b=`r s3model4sum$coeff[3,1]` [`r s3model4sum$coeff[3,1] - 1.96 * s3model4sum$coeff[3,2]`, `r s3model4sum$coeff[3,1] + 1.96 * s3model4sum$coeff[3,2]`], t(390)=`r s3model4sum$coeff[3,3]` , p=`r 2*(1-pt(abs(s3model4sum$coeff[3,3]),390))`)
 
-Disgust (b=`r mod5sum$coeff[3,1]` [`r mod5sum$coeff[3,1] - 1.96 * mod5sum$coeff[3,2]`, `r mod5sum$coeff[3,1] + 1.96 * mod5sum$coeff[3,2]`], t(390)=`r mod5sum$coeff[3,3]` , p=`r 2*(1-pt(abs(mod5sum$coeff[3,3]),390))`)
+Disgust (b=`r s3model5sum$coeff[3,1]` [`r s3model5sum$coeff[3,1] - 1.96 * s3model5sum$coeff[3,2]`, `r s3model5sum$coeff[3,1] + 1.96 * s3model5sum$coeff[3,2]`], t(390)=`r s3model5sum$coeff[3,3]` , p=`r 2*(1-pt(abs(s3model5sum$coeff[3,3]),390))`)
 
-Disappointment (b=`r mod6sum$coeff[3,1]` [`r mod6sum$coeff[3,1] - 1.96 * mod6sum$coeff[3,2]`, `r mod6sum$coeff[3,1] + 1.96 * mod6sum$coeff[3,2]`], t(390)=`r mod6sum$coeff[3,3]` , p=`r 2*(1-pt(abs(mod6sum$coeff[3,3]),390))`)
+Disappointment (b=`r s3model6sum$coeff[3,1]` [`r s3model6sum$coeff[3,1] - 1.96 * s3model6sum$coeff[3,2]`, `r s3model6sum$coeff[3,1] + 1.96 * s3model6sum$coeff[3,2]`], t(390)=`r s3model6sum$coeff[3,3]` , p=`r 2*(1-pt(abs(s3model6sum$coeff[3,3]),390))`)
 
-Surprise (b=`r mod7sum$coeff[3,1]` [`r mod7sum$coeff[3,1] - 1.96 * mod7sum$coeff[3,2]`, `r mod7sum$coeff[3,1] + 1.96 * mod7sum$coeff[3,2]`], t(390)=`r mod7sum$coeff[3,3]` , p=`r 2*(1-pt(abs(mod7sum$coeff[3,3]),390))`)
+Surprise (b=`r s3model7sum$coeff[3,1]` [`r s3model7sum$coeff[3,1] - 1.96 * s3model7sum$coeff[3,2]`, `r s3model7sum$coeff[3,1] + 1.96 * s3model7sum$coeff[3,2]`], t(390)=`r s3model7sum$coeff[3,3]` , p=`r 2*(1-pt(abs(s3model7sum$coeff[3,3]),390))`)
 
-Fear (b=`r mod8sum$coeff[3,1]` [`r mod8sum$coeff[3,1] - 1.96 * mod8sum$coeff[3,2]`, `r mod8sum$coeff[3,1] + 1.96 * mod8sum$coeff[3,2]`], t(390)=`r mod8sum$coeff[3,3]` , p=`r 2*(1-pt(abs(mod8sum$coeff[3,3]),390))`)
-
+Fear (b=`r s3model8sum$coeff[3,1]` [`r s3model8sum$coeff[3,1] - 1.96 * s3model8sum$coeff[3,2]`, `r s3model8sum$coeff[3,1] + 1.96 * s3model8sum$coeff[3,2]`], t(390)=`r s3model8sum$coeff[3,3]` , p=`r 2*(1-pt(abs(s3model8sum$coeff[3,3]),390))`)
 
 
 ## With Future
 ##### Interactions
-Happy (b=`r mod1sum$coeff[6,1]` [`r mod1sum$coeff[6,1] - 1.96 * mod1sum$coeff[6,2]`, `r mod1sum$coeff[6,1] + 1.96 * mod1sum$coeff[6,2]`], t(390)=`r mod1sum$coeff[6,3]` , p=`r 2*(1-pt(abs(mod1sum$coeff[6,3]),390))`)
+Happy (b=`r s3model1sum$coeff[6,1]` [`r s3model1sum$coeff[6,1] - 1.96 * s3model1sum$coeff[6,2]`, `r s3model1sum$coeff[6,1] + 1.96 * s3model1sum$coeff[6,2]`], t(390)=`r s3model1sum$coeff[6,3]` , p=`r 2*(1-pt(abs(s3model1sum$coeff[6,3]),390))`)
 
-Content (b=`r mod2sum$coeff[6,1]` [`r mod2sum$coeff[6,1] - 1.96 * mod2sum$coeff[6,2]`, `r  mod2sum$coeff[6,1] + 1.96 * mod2sum$coeff[6,2]`], t(390)=`r mod2sum$coeff[6,3]` , p=`r 2*(1-pt(abs(mod2sum$coeff[6,3]),390))`)
+Content (b=`r s3model2sum$coeff[6,1]` [`r s3model2sum$coeff[6,1] - 1.96 * s3model2sum$coeff[6,2]`, `r  s3model2sum$coeff[6,1] + 1.96 * s3model2sum$coeff[6,2]`], t(390)=`r s3model2sum$coeff[6,3]` , p=`r 2*(1-pt(abs(s3model2sum$coeff[6,3]),390))`)
 
-Sad (b=`r mod3sum$coeff[6,1]` [`r mod3sum$coeff[6,1] - 1.96 * mod3sum$coeff[6,2]`, `r mod3sum$coeff[6,1] + 1.96 * mod3sum$coeff[6,2]`], t(390)=`r mod3sum$coeff[6,3]` , p=`r 2*(1-pt(abs(mod3sum$coeff[6,3]),390))`)
+Sad (b=`r s3model3sum$coeff[6,1]` [`r s3model3sum$coeff[6,1] - 1.96 * s3model3sum$coeff[6,2]`, `r s3model3sum$coeff[6,1] + 1.96 * s3model3sum$coeff[6,2]`], t(390)=`r s3model3sum$coeff[6,3]` , p=`r 2*(1-pt(abs(s3model3sum$coeff[6,3]),390))`)
 
-Anger (b=`r mod4sum$coeff[6,1]` [`r mod4sum$coeff[6,1] - 1.96 * mod4sum$coeff[6,2]`, `r mod4sum$coeff[6,1] + 1.96 * mod4sum$coeff[6,2]`], t(390)=`r mod4sum$coeff[6,3]` , p=`r 2*(1-pt(abs(mod4sum$coeff[6,3]),390))`)
+Anger (b=`r s3model4sum$coeff[6,1]` [`r s3model4sum$coeff[6,1] - 1.96 * s3model4sum$coeff[6,2]`, `r s3model4sum$coeff[6,1] + 1.96 * s3model4sum$coeff[6,2]`], t(390)=`r s3model4sum$coeff[6,3]` , p=`r 2*(1-pt(abs(s3model4sum$coeff[6,3]),390))`)
 
-Disgust (b=`r mod5sum$coeff[6,1]` [`r mod5sum$coeff[6,1] - 1.96 * mod5sum$coeff[6,2]`, `r mod5sum$coeff[6,1] + 1.96 * mod5sum$coeff[6,2]`], t(390)=`r mod5sum$coeff[6,3]` , p=`r 2*(1-pt(abs(mod5sum$coeff[6,3]),390))`)
+Disgust (b=`r s3model5sum$coeff[6,1]` [`r s3model5sum$coeff[6,1] - 1.96 * s3model5sum$coeff[6,2]`, `r s3model5sum$coeff[6,1] + 1.96 * s3model5sum$coeff[6,2]`], t(390)=`r s3model5sum$coeff[6,3]` , p=`r 2*(1-pt(abs(s3model5sum$coeff[6,3]),390))`)
 
-Disappointment (b=`r mod6sum$coeff[6,1]` [`r mod6sum$coeff[6,1] - 1.96 * mod6sum$coeff[6,2]`, `r mod6sum$coeff[6,1] + 1.96 * mod6sum$coeff[6,2]`], t(390)=`r mod6sum$coeff[6,3]` , p=`r 2*(1-pt(abs(mod6sum$coeff[6,3]),390))`)
+Disappointment (b=`r s3model6sum$coeff[6,1]` [`r s3model6sum$coeff[6,1] - 1.96 * s3model6sum$coeff[6,2]`, `r s3model6sum$coeff[6,1] + 1.96 * s3model6sum$coeff[6,2]`], t(390)=`r s3model6sum$coeff[6,3]` , p=`r 2*(1-pt(abs(s3model6sum$coeff[6,3]),390))`)
 
-Surprise (b=`r mod7sum$coeff[6,1]` [`r mod7sum$coeff[6,1] - 1.96 * mod7sum$coeff[6,2]`, `r mod7sum$coeff[6,1] + 1.96 * mod7sum$coeff[6,2]`], t(390)=`r mod7sum$coeff[6,3]` , p=`r 2*(1-pt(abs(mod7sum$coeff[6,3]),390))`)
+Surprise (b=`r s3model7sum$coeff[6,1]` [`r s3model7sum$coeff[6,1] - 1.96 * s3model7sum$coeff[6,2]`, `r s3model7sum$coeff[6,1] + 1.96 * s3model7sum$coeff[6,2]`], t(390)=`r s3model7sum$coeff[6,3]` , p=`r 2*(1-pt(abs(s3model7sum$coeff[6,3]),390))`)
 
-Fear (b=`r mod8sum$coeff[6,1]` [`r mod8sum$coeff[6,1] - 1.96 * mod8sum$coeff[6,2]`, `r mod8sum$coeff[6,1] + 1.96 * mod8sum$coeff[6,2]`], t(390)=`r mod8sum$coeff[6,3]` , p=`r 2*(1-pt(abs(mod8sum$coeff[6,3]),390))`)
+Fear (b=`r s3model8sum$coeff[6,1]` [`r s3model8sum$coeff[6,1] - 1.96 * s3model8sum$coeff[6,2]`, `r s3model8sum$coeff[6,1] + 1.96 * s3model8sum$coeff[6,2]`], t(390)=`r s3model8sum$coeff[6,3]` , p=`r 2*(1-pt(abs(s3model8sum$coeff[6,3]),390))`)
 
 
 
 ##### Simple Effects
-Happy (b=`r mod1sum$coeff[4,1]` [`r mod1sum$coeff[4,1] - 1.96 * mod1sum$coeff[4,2]`, `r mod1sum$coeff[4,1] + 1.96 * mod1sum$coeff[4,2]`], t(390)=`r mod1sum$coeff[4,3]` , p=`r 2*(1-pt(abs(mod1sum$coeff[4,3]),390))`)
+Happy (b=`r s3model1sum$coeff[4,1]` [`r s3model1sum$coeff[4,1] - 1.96 * s3model1sum$coeff[4,2]`, `r s3model1sum$coeff[4,1] + 1.96 * s3model1sum$coeff[4,2]`], t(390)=`r s3model1sum$coeff[4,3]` , p=`r 2*(1-pt(abs(s3model1sum$coeff[4,3]),390))`)
 
-Content (b=`r mod2sum$coeff[4,1]` [`r mod2sum$coeff[4,1] - 1.96 * mod2sum$coeff[4,2]`, `r mod2sum$coeff[4,1] + 1.96 * mod2sum$coeff[4,2]`], t(390)=`r mod2sum$coeff[4,3]` , p=`r 2*(1-pt(abs(mod2sum$coeff[4,3]),390))`)
+Content (b=`r s3model2sum$coeff[4,1]` [`r s3model2sum$coeff[4,1] - 1.96 * s3model2sum$coeff[4,2]`, `r s3model2sum$coeff[4,1] + 1.96 * s3model2sum$coeff[4,2]`], t(390)=`r s3model2sum$coeff[4,3]` , p=`r 2*(1-pt(abs(s3model2sum$coeff[4,3]),390))`)
 
-Sad (b=`r mod3sum$coeff[4,1]` [`r mod3sum$coeff[4,1] - 1.96 * mod3sum$coeff[4,2]`, `r mod3sum$coeff[4,1] + 1.96 * mod3sum$coeff[4,2]`], t(390)=`r mod3sum$coeff[4,3]` , p=`r 2*(1-pt(abs(mod3sum$coeff[4,3]),390))`)
+Sad (b=`r s3model3sum$coeff[4,1]` [`r s3model3sum$coeff[4,1] - 1.96 * s3model3sum$coeff[4,2]`, `r s3model3sum$coeff[4,1] + 1.96 * s3model3sum$coeff[4,2]`], t(390)=`r s3model3sum$coeff[4,3]` , p=`r 2*(1-pt(abs(s3model3sum$coeff[4,3]),390))`)
 
-Anger (b=`r mod4sum$coeff[4,1]` [`r mod4sum$coeff[4,1] - 1.96 * mod4sum$coeff[4,2]`, `r mod4sum$coeff[4,1] + 1.96 * mod4sum$coeff[4,2]`], t(390)=`r mod4sum$coeff[4,3]` , p=`r 2*(1-pt(abs(mod4sum$coeff[4,3]),390))`)
+Anger (b=`r s3model4sum$coeff[4,1]` [`r s3model4sum$coeff[4,1] - 1.96 * s3model4sum$coeff[4,2]`, `r s3model4sum$coeff[4,1] + 1.96 * s3model4sum$coeff[4,2]`], t(390)=`r s3model4sum$coeff[4,3]` , p=`r 2*(1-pt(abs(s3model4sum$coeff[4,3]),390))`)
 
-Disgust (b=`r mod5sum$coeff[4,1]` [`r mod5sum$coeff[4,1] - 1.96 * mod5sum$coeff[4,2]`, `r mod5sum$coeff[4,1] + 1.96 * mod5sum$coeff[4,2]`], t(390)=`r mod5sum$coeff[4,3]` , p=`r 2*(1-pt(abs(mod5sum$coeff[4,3]),390))`)
+Disgust (b=`r s3model5sum$coeff[4,1]` [`r s3model5sum$coeff[4,1] - 1.96 * s3model5sum$coeff[4,2]`, `r s3model5sum$coeff[4,1] + 1.96 * s3model5sum$coeff[4,2]`], t(390)=`r s3model5sum$coeff[4,3]` , p=`r 2*(1-pt(abs(s3model5sum$coeff[4,3]),390))`)
 
-Disappointment (b=`r mod6sum$coeff[4,1]` [`r mod6sum$coeff[4,1] - 1.96 * mod6sum$coeff[4,2]`, `r mod6sum$coeff[4,1] + 1.96 * mod6sum$coeff[4,2]`], t(390)=`r mod6sum$coeff[4,3]` , p=`r 2*(1-pt(abs(mod6sum$coeff[4,3]),390))`)
+Disappointment (b=`r s3model6sum$coeff[4,1]` [`r s3model6sum$coeff[4,1] - 1.96 * s3model6sum$coeff[4,2]`, `r s3model6sum$coeff[4,1] + 1.96 * s3model6sum$coeff[4,2]`], t(390)=`r s3model6sum$coeff[4,3]` , p=`r 2*(1-pt(abs(s3model6sum$coeff[4,3]),390))`)
 
-Surprise (b=`r mod7sum$coeff[4,1]` [`r mod7sum$coeff[4,1] - 1.96 * mod7sum$coeff[4,2]`, `r mod7sum$coeff[4,1] + 1.96 * mod7sum$coeff[4,2]`], t(390)=`r mod7sum$coeff[4,3]` , p=`r 2*(1-pt(abs(mod7sum$coeff[4,3]),390))`)
+Surprise (b=`r s3model7sum$coeff[4,1]` [`r s3model7sum$coeff[4,1] - 1.96 * s3model7sum$coeff[4,2]`, `r s3model7sum$coeff[4,1] + 1.96 * s3model7sum$coeff[4,2]`], t(390)=`r s3model7sum$coeff[4,3]` , p=`r 2*(1-pt(abs(s3model7sum$coeff[4,3]),390))`)
 
-Fear (b=`r mod8sum$coeff[4,1]` [`r mod8sum$coeff[4,1] - 1.96 * mod8sum$coeff[4,2]`, `r mod8sum$coeff[4,1] + 1.96 * mod8sum$coeff[4,2]`], t(390)=`r mod8sum$coeff[4,3]` , p=`r 2*(1-pt(abs(mod8sum$coeff[4,3]),390))`)
-
-
-
+Fear (b=`r s3model8sum$coeff[4,1]` [`r s3model8sum$coeff[4,1] - 1.96 * s3model8sum$coeff[4,2]`, `r s3model8sum$coeff[4,1] + 1.96 * s3model8sum$coeff[4,2]`], t(390)=`r s3model8sum$coeff[4,3]` , p=`r 2*(1-pt(abs(s3model8sum$coeff[4,3]),390))`)
+```
 
