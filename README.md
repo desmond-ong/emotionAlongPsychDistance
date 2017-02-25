@@ -1,4 +1,4 @@
-# Happier than thou: An egocentric positivity bias in emotion attribution
+# Happier than thou? A self-enhancement bias in emotion attribution
 -----
 
 This repository contains materials for the following paper:
