@@ -1,4 +1,4 @@
-
+# Emotion Attribution and Psychological Distance
 
 This [Github repository](https://github.com/desmond-ong/emotionPsychDistance) contains materials for the following paper:
 
