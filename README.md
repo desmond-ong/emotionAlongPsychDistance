@@ -1,6 +1,6 @@
 # Emotion Attribution and Psychological Distance
 
-This [Github repository](https://github.com/desmond-ong/emotionPsychDistance) contains materials for the following paper:
+This [Github page](http://desmond-ong.github.io/emotionPsychDistance/) ([repository](https://github.com/desmond-ong/emotionPsychDistance)) contains materials for the following paper:
 
 Ong, D. C., Goodman, N. D., & Zaki, J. (in press). Happier than thou? A self-enhancement bias in emotion attribution. *Emotion*.
 
