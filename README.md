@@ -2,7 +2,7 @@
 
 This [Github page](http://desmond-ong.github.io/emotionPsychDistance/) ([repository](https://github.com/desmond-ong/emotionPsychDistance)) contains materials for the following paper:
 
-Ong, D. C., Goodman, N. D., & Zaki, J. (in press). Happier than thou? A self-enhancement bias in emotion attribution. *Emotion*.
+Ong, D. C., Goodman, N. D., & Zaki, J. (2018). Happier than thou? A self-enhancement bias in emotion attribution. *Emotion*, 18(1), 116-126.
 
 This repository is maintained by Desmond Ong. Questions, comments, requests for clarification or replication, etc, should be directed to desmond (dot) ong (at) stanford (dot) edu
 
